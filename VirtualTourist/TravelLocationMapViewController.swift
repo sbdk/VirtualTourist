@@ -11,11 +11,12 @@ import MapKit
 import CoreData
 
 
-class TravelLocationMapViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
+class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     
     @IBOutlet weak var mapView: MKMapView!
     
     let regionRadius: CLLocationDistance = 5000
+    var storedPins = [Pin]()
     
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
@@ -31,17 +32,13 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate, NSFe
         super.viewDidLoad()
         
         mapView.delegate = self
-        fetchedResultsController.delegate = self
-        do{
-            try fetchedResultsController.performFetch()
-        } catch {print("error when performFetch")}
-        
-        var storedPins = fetchedResultsController.fetchedObjects as! [Pin]
+        storedPins = fetchAllPins()
+        print(storedPins)
         
         for pin in storedPins {
             let annotation = MKPointAnnotation()
-            annotation.coordinate = pin.coordinate
-            annotation.title = String(pin.dropTime)
+            annotation.coordinate = CLLocationCoordinate2DMake(pin.latitude, pin.longitude)
+            annotation.title = pin.title
             mapView.addAnnotation(annotation)
         }
     }
@@ -60,7 +57,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate, NSFe
     lazy var fetchedResultsController: NSFetchedResultsController = {
         
         let fetchRequest = NSFetchRequest(entityName: "Pin")
-        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "dropTime", ascending: true)]
+        //fetchRequest.sortDescriptors = [NSSortDescriptor(key: "latitude", ascending: true)]
         let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
         return fetchedResultController
     }()
@@ -106,67 +103,24 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate, NSFe
         let point = gestureRecognizer.locationInView(self.mapView)
         let pointCoordinate = mapView.convertPoint(point, toCoordinateFromView: mapView)
         
-        let annotation = MKPointAnnotation()
-        annotation.coordinate = pointCoordinate
-        mapView.addAnnotation(annotation)
-        
-        let newPin = Pin(coordinate: pointCoordinate, context: sharedContext) 
-        sharedContext.insertObject(newPin)
+        let newPin = Pin(newPinlatitude: pointCoordinate.latitude, newPinlongitude: pointCoordinate.longitude, context: sharedContext)
         CoreDataStackManager.sharedInstance().saveContext()
-    }
-    
-    //implemente fetchResultsControll delegate methods
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
         
+        let annotation = MKPointAnnotation()
+        annotation.coordinate = CLLocationCoordinate2DMake(newPin.latitude, newPin.longitude)
+        annotation.title = newPin.title
+        mapView.addAnnotation(annotation)
+    }
+    
+    func fetchAllPins() -> [Pin]{
+        //create the fetch request
+        let fetchRequest = NSFetchRequest(entityName: "Pin")
         
+        do{
+            return try sharedContext.executeFetchRequest(fetchRequest) as! [Pin]
+        } catch let error as NSError {
+            print("Error in fetchAllActors(): \(error)")
+            return [Pin]()
+        }
     }
-    
-    func controller(controller: NSFetchedResultsController,
-        didChangeSection sectionInfo: NSFetchedResultsSectionInfo,
-        atIndex sectionIndex: Int,
-        forChangeType type: NSFetchedResultsChangeType) {
-            
-            switch type {
-            case .Insert: break
-                
-                
-            case .Delete: break
-                
-                
-            default:
-                return
-            }
-    }
-    
-    //
-    // This is the most interesting method. Take particular note of way the that newIndexPath
-    // parameter gets unwrapped and put into an array literal: [newIndexPath!]
-    //
-    
-    func controller(controller: NSFetchedResultsController,
-        didChangeObject anObject: AnyObject,
-        atIndexPath indexPath: NSIndexPath?,
-        forChangeType type: NSFetchedResultsChangeType,
-        newIndexPath: NSIndexPath?) {
-            
-            switch type {
-            case .Insert: break
-        
-                
-            case .Delete: break
-              
-                
-            case .Update: break
-                
-                
-            case .Move: break
-                
-            }
-    }
-    
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
-        
-    }
-
-
 }

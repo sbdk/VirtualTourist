@@ -12,8 +12,9 @@ import CoreData
 
 class Pin: NSManagedObject {
     
-    @NSManaged var coordinate: CLLocationCoordinate2D
-    @NSManaged var dropTime: NSDate
+    @NSManaged var latitude: Double
+    @NSManaged var longitude: Double
+    @NSManaged var title: String
     //@NSManaged var photos: [Photo]
     
     //Standard Core Data init method.
@@ -21,10 +22,17 @@ class Pin: NSManagedObject {
         super.init(entity: entity, insertIntoManagedObjectContext: context)
     }
     
-    init(coordinate: CLLocationCoordinate2D, context: NSManagedObjectContext){
+    init(newPinlatitude: CLLocationDegrees, newPinlongitude: CLLocationDegrees, context: NSManagedObjectContext){
         let entity =  NSEntityDescription.entityForName("Pin", inManagedObjectContext: context)!
         super.init(entity: entity,insertIntoManagedObjectContext: context)
-        dropTime = NSDate()
+        latitude = newPinlatitude
+        longitude = newPinlongitude
+        
+        let formatter = NSDateFormatter()
+        formatter.dateStyle = NSDateFormatterStyle.MediumStyle
+        formatter.timeStyle = .LongStyle
+        let titleString = formatter.stringFromDate(NSDate())
+        
+        title = titleString
     }
-    
 }
