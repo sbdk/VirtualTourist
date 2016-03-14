@@ -15,7 +15,7 @@
 		BE13450C1C935144005200A6 /* VirtualTouristTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE13450B1C935144005200A6 /* VirtualTouristTests.swift */; };
 		BE1345171C935144005200A6 /* VirtualTouristUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE1345161C935144005200A6 /* VirtualTouristUITests.swift */; };
 		BE1345251C935586005200A6 /* TravelLocationMapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE1345241C935586005200A6 /* TravelLocationMapViewController.swift */; };
-		BE1345271C93560F005200A6 /* PhotoAlbumViewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE1345261C93560F005200A6 /* PhotoAlbumViewViewController.swift */; };
+		BE1345271C93560F005200A6 /* PhotoAlbumViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE1345261C93560F005200A6 /* PhotoAlbumViewController.swift */; };
 		BE1345291C9356BA005200A6 /* Pin.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE1345281C9356BA005200A6 /* Pin.swift */; };
 		BE13452B1C9356C8005200A6 /* Photo.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE13452A1C9356C8005200A6 /* Photo.swift */; };
 		BE13452D1C936C7C005200A6 /* CoreDataStackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE13452C1C936C7C005200A6 /* CoreDataStackManager.swift */; };
@@ -53,7 +53,7 @@
 		BE1345161C935144005200A6 /* VirtualTouristUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VirtualTouristUITests.swift; sourceTree = "<group>"; };
 		BE1345181C935144005200A6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BE1345241C935586005200A6 /* TravelLocationMapViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TravelLocationMapViewController.swift; sourceTree = "<group>"; };
-		BE1345261C93560F005200A6 /* PhotoAlbumViewViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoAlbumViewViewController.swift; sourceTree = "<group>"; };
+		BE1345261C93560F005200A6 /* PhotoAlbumViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoAlbumViewController.swift; sourceTree = "<group>"; };
 		BE1345281C9356BA005200A6 /* Pin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Pin.swift; sourceTree = "<group>"; };
 		BE13452A1C9356C8005200A6 /* Photo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Photo.swift; sourceTree = "<group>"; };
 		BE13452C1C936C7C005200A6 /* CoreDataStackManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreDataStackManager.swift; sourceTree = "<group>"; };
@@ -110,7 +110,7 @@
 				BE1344FA1C935143005200A6 /* VirtualTourist.xcdatamodeld */,
 				BE13452C1C936C7C005200A6 /* CoreDataStackManager.swift */,
 				BE1345241C935586005200A6 /* TravelLocationMapViewController.swift */,
-				BE1345261C93560F005200A6 /* PhotoAlbumViewViewController.swift */,
+				BE1345261C93560F005200A6 /* PhotoAlbumViewController.swift */,
 				BE1344F71C935143005200A6 /* Main.storyboard */,
 				BE1345281C9356BA005200A6 /* Pin.swift */,
 				BE13452A1C9356C8005200A6 /* Photo.swift */,
@@ -276,7 +276,7 @@
 				BE1344F41C935143005200A6 /* AppDelegate.swift in Sources */,
 				BE13452D1C936C7C005200A6 /* CoreDataStackManager.swift in Sources */,
 				BE1344FC1C935143005200A6 /* VirtualTourist.xcdatamodeld in Sources */,
-				BE1345271C93560F005200A6 /* PhotoAlbumViewViewController.swift in Sources */,
+				BE1345271C93560F005200A6 /* PhotoAlbumViewController.swift in Sources */,
 				BE1345251C935586005200A6 /* TravelLocationMapViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -502,6 +502,7 @@
 				BE13451D1C935144005200A6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		BE13451E1C935144005200A6 /* Build configuration list for PBXNativeTarget "VirtualTouristTests" */ = {
 			isa = XCConfigurationList;
@@ -510,6 +511,7 @@
 				BE1345201C935144005200A6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		BE1345211C935144005200A6 /* Build configuration list for PBXNativeTarget "VirtualTouristUITests" */ = {
 			isa = XCConfigurationList;
@@ -518,6 +520,7 @@
 				BE1345231C935144005200A6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 

@@ -10,9 +10,9 @@ import UIKit
 import MapKit
 import CoreData
 
-class PhotoAlbumViewViewController: UIViewController {
+class PhotoAlbumViewController: UIViewController {
     
-    let appDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
+    var pin: Pin? = nil
 
     override func viewDidLoad() {
         super.viewDidLoad()
