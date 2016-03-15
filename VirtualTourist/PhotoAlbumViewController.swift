@@ -12,12 +12,20 @@ import CoreData
 
 class PhotoAlbumViewController: UIViewController {
     
+    @IBOutlet weak var mapView: MKMapView!
+    let regionRadius: CLLocationDistance = 2000
     var pin: Pin? = nil
+    var pinCoordinate: CLLocationCoordinate2D? = nil
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+        
+        navigationController?.navigationBar.hidden = false
+        
+        centerMapOnLocation(CLLocation(latitude: (pinCoordinate?.latitude)!, longitude: (pinCoordinate?.longitude)!))
+        let annotation = MKPointAnnotation()
+        annotation.coordinate = pinCoordinate!
+        mapView.addAnnotation(annotation)
     }
 
     override func didReceiveMemoryWarning() {
@@ -39,5 +47,14 @@ class PhotoAlbumViewController: UIViewController {
         let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
         return fetchedResultController
     }()
+    
+    func backFunction(){
+        self.dismissViewControllerAnimated(true, completion: nil)
+    }
+    
+    func centerMapOnLocation(location: CLLocation){
+        let coordinateRegion = MKCoordinateRegionMakeWithDistance(location.coordinate, regionRadius * 2.0, regionRadius * 2.0)
+        mapView.setRegion(coordinateRegion, animated: true)
+    }
 
 }
