@@ -10,12 +10,12 @@ import UIKit
 import MapKit
 import CoreData
 
-class Pin: NSManagedObject {
+class Pin: NSManagedObject, MKAnnotation {
     
     @NSManaged var latitude: Double
     @NSManaged var longitude: Double
-    @NSManaged var title: String
-    //@NSManaged var photos: [Photo]
+    //@NSManaged var title: String
+    @NSManaged var photos: [Photo]
     
     //Standard Core Data init method.
     override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
@@ -28,11 +28,15 @@ class Pin: NSManagedObject {
         latitude = newPinlatitude
         longitude = newPinlongitude
         
-        let formatter = NSDateFormatter()
-        formatter.dateStyle = NSDateFormatterStyle.MediumStyle
-        formatter.timeStyle = .LongStyle
-        let titleString = formatter.stringFromDate(NSDate())
+        //let formatter = NSDateFormatter()
+        //formatter.dateStyle = NSDateFormatterStyle.MediumStyle
+        //formatter.timeStyle = .LongStyle
+        //let titleString = formatter.stringFromDate(NSDate())
+        //title = titleString
+    }
+    
+    var coordinate: CLLocationCoordinate2D {
         
-        title = titleString
+        return CLLocationCoordinate2DMake(latitude, longitude)
     }
 }
