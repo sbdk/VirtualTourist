@@ -58,7 +58,7 @@
                                 </constraints>
                             </mapView>
                             <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="G65-bS-7JM">
-                                <rect key="frame" x="0.0" y="214" width="375" height="453"/>
+                                <rect key="frame" x="0.0" y="217" width="375" height="450"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                                 <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="10" minimumInteritemSpacing="10" id="GJJ-eq-UFE">
                                     <size key="itemSize" width="100" height="100"/>
@@ -91,6 +91,10 @@
                                         </connections>
                                     </collectionViewCell>
                                 </cells>
+                                <connections>
+                                    <outlet property="dataSource" destination="6LS-ov-F4K" id="VGH-BD-gSf"/>
+                                    <outlet property="delegate" destination="6LS-ov-F4K" id="1ZE-pJ-jXK"/>
+                                </connections>
                             </collectionView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -103,7 +107,7 @@
                             <constraint firstItem="3hr-Xx-ge6" firstAttribute="leading" secondItem="afv-c0-n5W" secondAttribute="leading" id="Ycn-iC-SxS"/>
                             <constraint firstItem="3hr-Xx-ge6" firstAttribute="top" secondItem="3Bv-86-TZU" secondAttribute="bottom" id="a4l-De-Nna"/>
                             <constraint firstItem="3hr-Xx-ge6" firstAttribute="top" secondItem="3Bv-86-TZU" secondAttribute="bottom" id="hmd-7y-If8"/>
-                            <constraint firstItem="G65-bS-7JM" firstAttribute="top" secondItem="3hr-Xx-ge6" secondAttribute="bottom" id="qog-C8-nFq"/>
+                            <constraint firstItem="G65-bS-7JM" firstAttribute="top" secondItem="3hr-Xx-ge6" secondAttribute="bottom" constant="3" id="qog-C8-nFq"/>
                         </constraints>
                         <variation key="default">
                             <mask key="constraints">

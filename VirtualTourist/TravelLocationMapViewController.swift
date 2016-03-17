@@ -15,6 +15,8 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     
     @IBOutlet weak var mapView: MKMapView!
     
+    var storedPins = [Pin]()
+    
     //mapView help function
     func centerMapOnLocation(location: CLLocation){
         let regionRadius: CLLocationDistance = 10000
@@ -30,8 +32,10 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationItem.rightBarButtonItem = self.editButtonItem()
         mapView.delegate = self
-        mapView.addAnnotations(fetchAllPins())
+        storedPins = fetchAllPins()
+        mapView.addAnnotations(storedPins)
         
         //add longPressRecogniser into mapView
         let longPressRecogniser = UILongPressGestureRecognizer(target: self, action: "dropNewPin:")
@@ -79,42 +83,10 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         
         //add new Pin object into sharedContext
         let newPin = Pin(newPinlatitude: pointCoordinate.latitude, newPinlongitude: pointCoordinate.longitude, context: sharedContext)
+        self.storedPins.append(newPin)
         mapView.addAnnotation(newPin)
-        CoreDataStackManager.sharedInstance().saveContext()
- 
-        //pass Pin data into PhotoAlbumView
-        //let controller = self.storyboard?.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
-        //controller.pin = newPin
         
-        //get photo Urls from Flickr based on the new Pin coordinate
-        /*FlickrClient.sharedInstance().getPhotosFromFlickr(newPin.latitude, dropPinLongitude: newPin.longitude, completionHandler: {(success, imageUrlArray, errorString) in
-            
-            if success {
-                
-                for url in imageUrlArray! {
-                    
-                    guard let imageURL = NSURL(string: url) else {
-                        
-                        print("error")
-                        return
-                    }
-                    
-                    if let imageData = NSData(contentsOfURL: imageURL) {
-                        
-                        let image = UIImage(data: imageData)
-                        
-                    }  else {
-                        print("Image does not exist at \(imageURL)")
-                    }
-                    
-                }
-                
-            } else {
-                print(errorString)
-            }
-            
-            
-            })  */
+        CoreDataStackManager.sharedInstance().saveContext()
     }
     
     

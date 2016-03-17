@@ -19,25 +19,24 @@ class FlickrClient: NSObject {
     }
     
     let BASE_URL = "https://api.flickr.com/services/rest/"
-    let methodArguments = [
-        "method": "flickr.photos.search",
-        "api_key": "679cb48bf90f3cbda78b28b73721cf0e",
-        "safe_search":"1",
-        "content_type":"1",
-        "extras": "url_m",
-        "format": "json",
-        "nojsoncallback": "1",
-        "per_page":"20"
-    ]
     
     func getPhotosFromFlickr(dropPinLatitude: Double, dropPinLongitude: Double, completionHandler: (success: Bool, parsedReuslt: [String: AnyObject]?, errorString: String?) -> Void) {
         
-        let geoParameters = [
+        let methodParameters = [
+            "method": "flickr.photos.search",
+            "api_key": "679cb48bf90f3cbda78b28b73721cf0e",
+            "safe_search":"1",
+            "content_type":"1",
+            "extras": "url_m",
+            "format": "json",
+            "nojsoncallback": "1",
+            "per_page":"18",
             "lat": "\(dropPinLatitude)",
-            "lon": "\(dropPinLongitude)"
+            "lon": "\(dropPinLongitude)",
+            "radius":"1"
         ]
         let session = NSURLSession.sharedSession()
-        let urlString = BASE_URL + escapedParameters(methodArguments) + escapedParameters(geoParameters)
+        let urlString = BASE_URL + escapedParameters(methodParameters)
         let url = NSURL(string: urlString)!
         let request = NSURLRequest(URL: url)
         
@@ -77,56 +76,15 @@ class FlickrClient: NSObject {
             if let photosDictionary = parsedResult["photos"] as? [String:AnyObject]{
                 
                 completionHandler(success: true, parsedReuslt: photosDictionary, errorString: nil)
-                
-                /*var totalPhotosVal = 0
-                var totalPagesVal = 0
-                var imageArray = [UIImage]()
-                if let totalPhotos = photosDictionary["total"] as? String {
-                    totalPhotosVal = (totalPhotos as NSString).integerValue
-                }
-                if let totalPages = photosDictionary["page"] as? String{
-                    totalPagesVal = (totalPages as NSString).integerValue
-                }
-                
-                if totalPhotosVal > 0 {
-                    
-                    if let photoArray = photosDictionary["photo"] as? [[String:AnyObject]]{
-                        
-                    }
                 } else {
-                    print("no photos at this location")
-                    completionHandler(success: true, imageArray: nil, errorString: nil)
-                }
-                
-                
-                if totalPhotosVal > 0 {
-                    if let photosArray = photosDictionary["photo"] as? [[String:AnyObject]]{
-                        for dictionary in photosArray {
-                           let imageUrlString = dictionary["url_m"] as? String
-                            guard let imageURL = NSURL(string: imageUrlString!) else {
-                                print("error when transform Url String")
-                                return
-                            }
-                            if let imageData = NSData(contentsOfURL: imageURL) {
-                                let image = UIImage(data: imageData)
-                                imageArray.append(image!)
-                            }  else {
-                                print("Image does not exist at \(imageURL)")
-                            }
-                        }
-                        completionHandler(success: true, imageArray: imageArray, errorString: nil)
-                    }
-                } else {
-                    print("no photos at this location")
-                    completionHandler(success: true, imageArray: nil, errorString: nil)
-                }*/
-            } else {
                 print("there is no photos returned in the result")
                 completionHandler(success: true, parsedReuslt: nil, errorString: nil)
             }
         }
         task.resume()
     }
+
+
     
     /* Helper function: Given a dictionary of parameters, convert to a string for a url */
     func escapedParameters(parameters: [String : AnyObject]) -> String {
@@ -147,6 +105,12 @@ class FlickrClient: NSObject {
         let fullURL = documentsDirectoryURL.URLByAppendingPathComponent(identifier)
         
         return fullURL.path!
+    }
+    
+    // MARK: - Shared Image Cache
+    
+    struct Caches {
+        static let imageCache = ImageCache()
     }
 
 }

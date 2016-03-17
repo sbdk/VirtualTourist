@@ -14,7 +14,6 @@ class Pin: NSManagedObject, MKAnnotation {
     
     @NSManaged var latitude: Double
     @NSManaged var longitude: Double
-    //@NSManaged var title: String
     @NSManaged var photos: [Photo]
     
     //Standard Core Data init method.

@@ -17,6 +17,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
     var pin: Pin!
+    var selectedIndexes = [NSIndexPath]()
+    var insertedIndexPaths: [NSIndexPath]!
+    var deletedIndexPaths: [NSIndexPath]!
+    var updatedIndexPaths: [NSIndexPath]!
     
     func centerMapOnLocation(location: CLLocation){
         let regionRadius: CLLocationDistance = 2000
@@ -29,7 +33,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     
         centerMapOnLocation(CLLocation(latitude: pin.latitude, longitude: pin.longitude))
         mapView.addAnnotation(pin)
-        
         do {
             try fetchedResultsController.performFetch()
         } catch {}
@@ -51,6 +54,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                         
                             let photo = Photo(dictionary: dictionary, context: self.sharedContext)
                             photo.dropPin = self.pin
+                            print(photo.imageUrlString)
                             
                             CoreDataStackManager.sharedInstance().saveContext()
                             return photo
@@ -58,12 +62,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                         dispatch_async(dispatch_get_main_queue()) {
                             self.collectionView.reloadData()
                         }
-                        
                     }
                 }
-                
-                
-            
             })
         }
     }
@@ -84,7 +84,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         
         let collectionCell = collectionView.dequeueReusableCellWithReuseIdentifier("PhotoAlbumCollectionViewCell", forIndexPath: indexPath) as! PhotoAlbumCollectionViewCell
         let photo = fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
-        collectionCell.photoImageView.image = photo.image
+        
+        collectionCell.photoImageView.contentMode = .ScaleAspectFill
+        asyncLoadPhotoImage(photo, imageView: collectionCell.photoImageView)
+        
         return collectionCell
     }
     
@@ -106,6 +109,61 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     
+    //implemente FetchedResultController Delegate Method
+    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+        
+        insertedIndexPaths = [NSIndexPath]()
+        deletedIndexPaths = [NSIndexPath]()
+        updatedIndexPaths = [NSIndexPath]()
+    }
+    //
+    // This is the most interesting method. Take particular note of way the that newIndexPath
+    // parameter gets unwrapped and put into an array literal: [newIndexPath!]
+    //
+    
+    func controller(controller: NSFetchedResultsController,
+        didChangeObject anObject: AnyObject,
+        atIndexPath indexPath: NSIndexPath?,
+        forChangeType type: NSFetchedResultsChangeType,
+        newIndexPath: NSIndexPath?) {
+            
+            switch type {
+            case .Insert:
+                insertedIndexPaths.append(newIndexPath!)
+                break
+                
+            case .Delete:
+                deletedIndexPaths.append(indexPath!)
+                break
+                
+            case .Update:
+                updatedIndexPaths.append(indexPath!)
+                break
+                
+            case .Move:
+                break
+                
+            default:
+                break
+            }
+    }
+    
+    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+        /*collectionView.performBatchUpdates({
+            
+            for indexPath in self.insertedIndexPaths{
+                self.collectionView.insertItemsAtIndexPaths([indexPath])
+            }
+            for indexPath in self.deletedIndexPaths {
+                self.collectionView.deleteItemsAtIndexPaths([indexPath])
+            }
+            for indexPath in self.updatedIndexPaths {
+                self.collectionView.reloadItemsAtIndexPaths([indexPath])
+            }
+            
+            },completion: nil)*/
+    }
+    
     //set convenience var for sharedContext
     lazy var sharedContext: NSManagedObjectContext = {
         
@@ -117,7 +175,28 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         
         let fetchRequest = NSFetchRequest(entityName: "Photo")
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "imageUrlString", ascending: true)]
+        fetchRequest.predicate = NSPredicate(format: "dropPin == %@", self.pin)
         let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
         return fetchedResultController
     }()
+    
+    
+    func asyncLoadPhotoImage(photo: Photo, imageView: UIImageView){
+        let downloadQueue = dispatch_queue_create("virtualTourist", nil)
+        
+        dispatch_async(downloadQueue) {
+            var data = NSData(contentsOfURL: NSURL(string: photo.imageUrlString!)!)
+            
+            var image: UIImage?
+            if data != nil{
+                
+                //photo.imageData = data
+                image = UIImage(data: data!)
+            }
+            
+            dispatch_async(dispatch_get_main_queue()){
+                imageView.image = image
+            }
+        }
+    }
 }
