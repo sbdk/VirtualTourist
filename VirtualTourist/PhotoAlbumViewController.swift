@@ -43,6 +43,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         super.viewWillAppear(animated)
         
         if pin.photos.isEmpty {
+            
             FlickrClient.sharedInstance().getPhotosFromFlickr(pin.latitude, dropPinLongitude: pin.longitude, completionHandler: {(success, parsedResult, errorString) in
                 
                 if let error = errorString {
@@ -54,7 +55,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                         
                             let photo = Photo(dictionary: dictionary, context: self.sharedContext)
                             photo.dropPin = self.pin
-                            print(photo.imageUrlString)
+                            print(photo.imageUrlString!)
                             
                             CoreDataStackManager.sharedInstance().saveContext()
                             return photo
@@ -86,7 +87,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         let photo = fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
         
         collectionCell.photoImageView.contentMode = .ScaleAspectFill
-        asyncLoadPhotoImage(photo, imageView: collectionCell.photoImageView)
+        //asyncLoadPhotoImage(photo, imageView: collectionCell.photoImageView)
+        configureCell(collectionCell, photo: photo)
         
         return collectionCell
     }
@@ -180,19 +182,56 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         return fetchedResultController
     }()
     
+    func configureCell(cell: PhotoAlbumCollectionViewCell, photo: Photo) {
+        
+        var cellImage = UIImage(named: "noImage")
+        
+        cell.photoImageView.image = nil
+        
+        if photo.imageUrlString == nil || photo.imageUrlString == "" {
+            cellImage = UIImage(named: "noImage")
+        } else if photo.image != nil {
+            cellImage = photo.image
+        }
+            
+        else {
+            let task = FlickrClient.sharedInstance().taskForImage(photo.imageUrlString!) { data, error in
+                
+                if let error = error {
+                    print("Image download error: \(error.localizedDescription)")
+                }
+                
+                if let data = data {
+                    // Craete the image
+                    let image = UIImage(data: data)
+                    
+                    // update the model
+                    photo.image = image
+                    
+                    // update the cell later, on the main thread
+                    dispatch_async(dispatch_get_main_queue()) {
+                        cell.photoImageView.image = image
+                    }
+                }
+            }
+            cell.taskToCancelifCellIsReused = task
+
+        }
+        
+        cell.photoImageView.image = cellImage
+    }
     
     func asyncLoadPhotoImage(photo: Photo, imageView: UIImageView){
         let downloadQueue = dispatch_queue_create("virtualTourist", nil)
         
         dispatch_async(downloadQueue) {
-            var data = NSData(contentsOfURL: NSURL(string: photo.imageUrlString!)!)
-            
-            var image: UIImage?
-            if data != nil{
-                
-                //photo.imageData = data
-                image = UIImage(data: data!)
+            guard let data = NSData(contentsOfURL: NSURL(string: photo.imageUrlString!)!) else {
+                print("get error when get image from URL")
+                return
             }
+            var image: UIImage?
+            image = UIImage(data: data)
+            photo.image = image
             
             dispatch_async(dispatch_get_main_queue()){
                 imageView.image = image

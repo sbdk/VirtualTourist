@@ -27,13 +27,15 @@ class Photo: NSManagedObject {
         imageUrlString = dictionary["url_m"] as? String
     }
     
-    /*var image: UIImage? {
+    var image: UIImage? {
         
         get {
+            //return ImageCache.sharedInstance().imageWithIdentifier(imageUrlString)
             return FlickrClient.Caches.imageCache.imageWithIdentifier(imageUrlString)
         }
         set {
+            //ImageCache.sharedInstance().storeImage(image, withIdentifier: imageUrlString!)
             FlickrClient.Caches.imageCache.storeImage(image, withIdentifier: imageUrlString!)
         }
-    }*/
+    }
 }

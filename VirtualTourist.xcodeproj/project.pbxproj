@@ -126,11 +126,11 @@
 				BE1344F71C935143005200A6 /* Main.storyboard */,
 				BE1345281C9356BA005200A6 /* Pin.swift */,
 				BE13452A1C9356C8005200A6 /* Photo.swift */,
-				BE7B1FA31C9A4A2200A8D809 /* ImageCache.swift */,
 				BE1344FD1C935143005200A6 /* Assets.xcassets */,
 				BE1344FF1C935143005200A6 /* LaunchScreen.storyboard */,
 				BE1344F31C935143005200A6 /* AppDelegate.swift */,
 				BE1345021C935143005200A6 /* Info.plist */,
+				BE7B1FA31C9A4A2200A8D809 /* ImageCache.swift */,
 			);
 			path = VirtualTourist;
 			sourceTree = "<group>";
@@ -223,7 +223,7 @@
 						CreatedOnToolsVersion = 7.2.1;
 						SystemCapabilities = {
 							com.apple.Maps.iOS = {
-								enabled = 1;
+								enabled = 0;
 							};
 						};
 					};

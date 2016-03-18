@@ -15,8 +15,6 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     
     @IBOutlet weak var mapView: MKMapView!
     
-    var storedPins = [Pin]()
-    
     //mapView help function
     func centerMapOnLocation(location: CLLocation){
         let regionRadius: CLLocationDistance = 10000
@@ -34,8 +32,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         super.viewDidLoad()
         navigationItem.rightBarButtonItem = self.editButtonItem()
         mapView.delegate = self
-        storedPins = fetchAllPins()
-        mapView.addAnnotations(storedPins)
+        mapView.addAnnotations(fetchAllPins())
         
         //add longPressRecogniser into mapView
         let longPressRecogniser = UILongPressGestureRecognizer(target: self, action: "dropNewPin:")
@@ -83,7 +80,6 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         
         //add new Pin object into sharedContext
         let newPin = Pin(newPinlatitude: pointCoordinate.latitude, newPinlongitude: pointCoordinate.longitude, context: sharedContext)
-        self.storedPins.append(newPin)
         mapView.addAnnotation(newPin)
         
         CoreDataStackManager.sharedInstance().saveContext()

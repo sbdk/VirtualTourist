@@ -13,6 +13,31 @@ class ImageCache {
     
     private var inMemoryCache = NSCache()
     
+    private var memoryStorage = NSMutableDictionary()
+    
+    // MARK: - Saving images
+    func storeImage(image: UIImage?, withIdentifier identifier: String) {
+        let path = pathForIdentifier(identifier)
+        
+        // If the image is nil, remove images from the cache
+        if image == nil {
+            memoryStorage.removeObjectForKey(path)
+            
+            do {
+                try NSFileManager.defaultManager().removeItemAtPath(path)
+            } catch _ {}
+            
+            return
+        }
+        
+        // Otherwise, keep the image in memory
+        memoryStorage.setObject(image!, forKey: path)
+        
+        // And in documents directory
+        let data = UIImagePNGRepresentation(image!)!
+        data.writeToFile(path, atomically: true)
+    }
+    
     // MARK: - Retreiving images
     func imageWithIdentifier(identifier: String?) -> UIImage? {
         
@@ -24,7 +49,7 @@ class ImageCache {
         let path = pathForIdentifier(identifier!)
         
         // First try the memory cache
-        if let image = inMemoryCache.objectForKey(path) as? UIImage {
+        if let image = memoryStorage.objectForKey(path) as? UIImage {
             return image
         }
         
@@ -32,35 +57,9 @@ class ImageCache {
         if let data = NSData(contentsOfFile: path) {
             return UIImage(data: data)
         }
-        
         return nil
     }
-    
-    // MARK: - Saving images
-    func storeImage(image: UIImage?, withIdentifier identifier: String) {
-        let path = pathForIdentifier(identifier)
-        
-        // If the image is nil, remove images from the cache
-        if image == nil {
-            inMemoryCache.removeObjectForKey(path)
-            
-            do {
-                try NSFileManager.defaultManager().removeItemAtPath(path)
-            } catch _ {}
-            
-            return
-        }
-        
-        // Otherwise, keep the image in memory
-        inMemoryCache.setObject(image!, forKey: path)
-        
-        // And in documents directory
-        let data = UIImagePNGRepresentation(image!)!
-        data.writeToFile(path, atomically: true)
-    }
-    
-    // MARK: - Helper
-    
+
     func pathForIdentifier(identifier: String) -> String {
         let documentsDirectoryURL: NSURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!
         let fullURL = documentsDirectoryURL.URLByAppendingPathComponent(identifier)

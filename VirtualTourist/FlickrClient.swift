@@ -11,11 +11,18 @@ import UIKit
 
 class FlickrClient: NSObject {
     
+    var session: NSURLSession
+    
     class func sharedInstance() -> FlickrClient {
         struct Singleton {
             static var sharedInstance = FlickrClient()
         }
         return Singleton.sharedInstance
+    }
+    
+    override init() {
+        session = NSURLSession.sharedSession()
+        super.init()
     }
     
     let BASE_URL = "https://api.flickr.com/services/rest/"
@@ -83,8 +90,25 @@ class FlickrClient: NSObject {
         }
         task.resume()
     }
-
-
+    
+    func taskForImage(filePath: String, completionHandler: (imageData: NSData?, error: NSError?) ->  Void) -> NSURLSessionTask {
+        
+        let request = NSURLRequest(URL: NSURL(string: filePath)!)
+        
+        let task = session.dataTaskWithRequest(request) {data, response, downloadError in
+            
+            if let error = downloadError {
+                //let newError = TheMovieDB.errorForData(data, response: response, error: error)
+                completionHandler(imageData: nil, error: error)
+            } else {
+                completionHandler(imageData: data, error: nil)
+            }
+        }
+        
+        task.resume()
+        
+        return task
+    }
     
     /* Helper function: Given a dictionary of parameters, convert to a string for a url */
     func escapedParameters(parameters: [String : AnyObject]) -> String {
@@ -99,6 +123,8 @@ class FlickrClient: NSObject {
         }
         return (!urlVars.isEmpty ? "?" : "") + urlVars.joinWithSeparator("&")
     }
+    
+    
     
     func pathForIdentifier(identifier: String) -> String {
         let documentsDirectoryURL: NSURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!
