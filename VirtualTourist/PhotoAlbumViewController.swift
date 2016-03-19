@@ -12,6 +12,8 @@ import CoreData
 
 class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout, UICollectionViewDataSource, NSFetchedResultsControllerDelegate {
     
+    @IBOutlet weak var newCollectionButton: UIBarButtonItem!
+    @IBOutlet weak var noImageLabel: UILabel!
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
@@ -41,10 +43,14 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
-        
         //get photo urls from Flickr if the Pin has no linked photo object yet
         //works best when user drop pin on the map without network connection and later open the photoAlubm view with network connection.
         if pin.photos.isEmpty {
+            
+            //set noImageLabel to show when pin has no photos reference
+            noImageLabel.hidden = false
+            noImageLabel.layer.zPosition = 2
+            newCollectionButton.enabled = false
             
             FlickrClient.sharedInstance().getPhotosFromFlickr(pin.latitude, dropPinLongitude: pin.longitude, completionHandler: {(success, parsedResult, errorString) in
                 
@@ -63,6 +69,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                             return photo
                         }
                         dispatch_async(dispatch_get_main_queue()) {
+                            self.noImageLabel.hidden = true
+                            self.newCollectionButton.enabled = true
                             self.collectionView.reloadData()
                         }
                     }

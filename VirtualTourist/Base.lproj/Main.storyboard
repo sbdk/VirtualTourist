@@ -51,6 +51,12 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="This Pin has no images." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="YXb-VX-EF5">
+                                <rect key="frame" x="0.0" y="109" width="375" height="450"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                             <mapView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" mapType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="3hr-Xx-ge6">
                                 <rect key="frame" x="0.0" y="64" width="375" height="150"/>
                                 <constraints>
@@ -58,7 +64,7 @@
                                 </constraints>
                             </mapView>
                             <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="G65-bS-7JM">
-                                <rect key="frame" x="0.0" y="217" width="375" height="450"/>
+                                <rect key="frame" x="0.0" y="217" width="375" height="406"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                                 <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="10" minimumInteritemSpacing="10" id="GJJ-eq-UFE">
                                     <size key="itemSize" width="100" height="100"/>
@@ -96,23 +102,41 @@
                                     <outlet property="delegate" destination="6LS-ov-F4K" id="1ZE-pJ-jXK"/>
                                 </connections>
                             </collectionView>
+                            <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="baM-eo-Rgw">
+                                <rect key="frame" x="0.0" y="623" width="375" height="44"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="44" id="tbi-sT-Ty8"/>
+                                </constraints>
+                                <items>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="yLY-z2-aVd"/>
+                                    <barButtonItem title="New Collection" id="1M2-Cp-lvg"/>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="JRn-q5-5ch"/>
+                                </items>
+                            </toolbar>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstAttribute="trailing" secondItem="G65-bS-7JM" secondAttribute="trailing" id="3hr-6S-h9G"/>
                             <constraint firstItem="G65-bS-7JM" firstAttribute="leading" secondItem="afv-c0-n5W" secondAttribute="leading" id="Ghh-Mx-aN7"/>
                             <constraint firstAttribute="trailing" secondItem="3hr-Xx-ge6" secondAttribute="trailing" id="JTX-78-Nly"/>
-                            <constraint firstItem="EL0-vR-obg" firstAttribute="top" secondItem="G65-bS-7JM" secondAttribute="bottom" id="PNK-s0-YMj"/>
+                            <constraint firstItem="EL0-vR-obg" firstAttribute="top" secondItem="G65-bS-7JM" secondAttribute="bottom" constant="40" id="PNK-s0-YMj"/>
                             <constraint firstItem="3hr-Xx-ge6" firstAttribute="top" secondItem="3Bv-86-TZU" secondAttribute="bottom" id="UTr-v2-Po8"/>
+                            <constraint firstAttribute="trailing" secondItem="baM-eo-Rgw" secondAttribute="trailing" id="YLb-jZ-gtj"/>
                             <constraint firstItem="3hr-Xx-ge6" firstAttribute="leading" secondItem="afv-c0-n5W" secondAttribute="leading" id="Ycn-iC-SxS"/>
                             <constraint firstItem="3hr-Xx-ge6" firstAttribute="top" secondItem="3Bv-86-TZU" secondAttribute="bottom" id="a4l-De-Nna"/>
+                            <constraint firstItem="YXb-VX-EF5" firstAttribute="centerY" secondItem="afv-c0-n5W" secondAttribute="centerY" id="anx-16-PCh"/>
+                            <constraint firstItem="baM-eo-Rgw" firstAttribute="top" secondItem="G65-bS-7JM" secondAttribute="bottom" id="dE9-80-zLq"/>
+                            <constraint firstItem="baM-eo-Rgw" firstAttribute="leading" secondItem="afv-c0-n5W" secondAttribute="leading" id="gUi-6X-B8I"/>
                             <constraint firstItem="3hr-Xx-ge6" firstAttribute="top" secondItem="3Bv-86-TZU" secondAttribute="bottom" id="hmd-7y-If8"/>
                             <constraint firstItem="G65-bS-7JM" firstAttribute="top" secondItem="3hr-Xx-ge6" secondAttribute="bottom" constant="3" id="qog-C8-nFq"/>
+                            <constraint firstItem="EL0-vR-obg" firstAttribute="top" secondItem="baM-eo-Rgw" secondAttribute="bottom" id="w1u-u4-PE8"/>
+                            <constraint firstItem="YXb-VX-EF5" firstAttribute="centerX" secondItem="afv-c0-n5W" secondAttribute="centerX" id="wud-fu-LyM"/>
                         </constraints>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="a4l-De-Nna"/>
                                 <exclude reference="hmd-7y-If8"/>
+                                <exclude reference="PNK-s0-YMj"/>
                             </mask>
                         </variation>
                     </view>
@@ -122,6 +146,8 @@
                         <outlet property="collectionView" destination="G65-bS-7JM" id="bD7-Dl-nkX"/>
                         <outlet property="flowLayout" destination="GJJ-eq-UFE" id="o2n-D5-1OP"/>
                         <outlet property="mapView" destination="3hr-Xx-ge6" id="Ilx-UH-grP"/>
+                        <outlet property="newCollectionButton" destination="1M2-Cp-lvg" id="oT5-yH-56X"/>
+                        <outlet property="noImageLabel" destination="YXb-VX-EF5" id="kr2-5m-e96"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="3pu-Ri-Tqz" userLabel="First Responder" sceneMemberID="firstResponder"/>
