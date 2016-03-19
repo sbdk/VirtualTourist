@@ -34,7 +34,7 @@ class FlickrClient: NSObject {
             "api_key": "679cb48bf90f3cbda78b28b73721cf0e",
             "safe_search":"1",
             "content_type":"1",
-            "extras": "url_m",
+            "extras": "url_s",
             "format": "json",
             "nojsoncallback": "1",
             "per_page":"18",

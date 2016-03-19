@@ -70,6 +70,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         let pin = view.annotation as! Pin
         controller.pin = pin
         self.navigationController?.pushViewController(controller, animated: true)
+        mapView.deselectAnnotation(view.annotation, animated: true)
     }
     
     func dropNewPin(gestureRecognizer: UIGestureRecognizer){
@@ -81,10 +82,35 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         //add new Pin object into sharedContext
         let newPin = Pin(newPinlatitude: pointCoordinate.latitude, newPinlongitude: pointCoordinate.longitude, context: sharedContext)
         mapView.addAnnotation(newPin)
-        
         CoreDataStackManager.sharedInstance().saveContext()
+        
+        //start to download image once new Pin object was created
+        //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
+            
+            FlickrClient.sharedInstance().getPhotosFromFlickr(newPin.latitude, dropPinLongitude: newPin.longitude, completionHandler: {(success, parsedResult, errorString) in
+                
+                if let error = errorString {
+                    print(error)
+                } else {
+                    if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
+                        
+                        _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
+                            let photo = Photo(dictionary: dictionary, context: self.sharedContext)
+                            print(photo.imageUrlString!)
+                            
+                            //assign relationship between Pin and Photo object
+                            photo.dropPin = newPin
+                            CoreDataStackManager.sharedInstance().saveContext()
+
+                            return photo
+                        }
+                    } else {
+                        print("there is no photo at this location")
+                    }
+                }
+            })
+        //}
     }
-    
     
     //CoreData help function
     lazy var sharedContext: NSManagedObjectContext = {

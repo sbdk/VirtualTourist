@@ -12,7 +12,6 @@ import CoreData
 class Photo: NSManagedObject {
     
     @NSManaged var imageUrlString: String?
-    //@NSManaged var imageData: NSData?
     @NSManaged var dropPin: Pin?
     
     override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
@@ -24,18 +23,16 @@ class Photo: NSManagedObject {
         let entity =  NSEntityDescription.entityForName("Photo", inManagedObjectContext: context)!
         super.init(entity: entity, insertIntoManagedObjectContext: context)
         
-        imageUrlString = dictionary["url_m"] as? String
+        imageUrlString = dictionary["url_s"] as? String
     }
     
-    var image: UIImage? {
-        
+    var imageData: NSData? {
         get {
-            //return ImageCache.sharedInstance().imageWithIdentifier(imageUrlString)
-            return FlickrClient.Caches.imageCache.imageWithIdentifier(imageUrlString)
+            return FlickrClient.Caches.imageCache.imageDataWithIdentifier(imageUrlString)
         }
         set {
-            //ImageCache.sharedInstance().storeImage(image, withIdentifier: imageUrlString!)
-            FlickrClient.Caches.imageCache.storeImage(image, withIdentifier: imageUrlString!)
+            FlickrClient.Caches.imageCache.storeImageData(newValue, withIdentifier: imageUrlString!)
+            print("data start to set into storage")
         }
     }
 }

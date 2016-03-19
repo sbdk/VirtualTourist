@@ -13,33 +13,30 @@ class ImageCache {
     
     private var inMemoryCache = NSCache()
     
-    private var memoryStorage = NSMutableDictionary()
-    
     // MARK: - Saving images
-    func storeImage(image: UIImage?, withIdentifier identifier: String) {
+    func storeImageData(imageData: NSData?, withIdentifier identifier: String) {
         let path = pathForIdentifier(identifier)
-        
         // If the image is nil, remove images from the cache
-        if image == nil {
-            memoryStorage.removeObjectForKey(path)
-            
+        if imageData == nil {
+            inMemoryCache.removeObjectForKey(path)
+            print("imageData is nil")
             do {
                 try NSFileManager.defaultManager().removeItemAtPath(path)
             } catch _ {}
-            
             return
         }
         
         // Otherwise, keep the image in memory
-        memoryStorage.setObject(image!, forKey: path)
+        inMemoryCache.setObject(imageData!, forKey: path)
+        print("data set into memory success")
         
         // And in documents directory
-        let data = UIImagePNGRepresentation(image!)!
-        data.writeToFile(path, atomically: true)
+        imageData!.writeToFile(path, atomically: true)
+        print("imageData set into disk success")
     }
     
     // MARK: - Retreiving images
-    func imageWithIdentifier(identifier: String?) -> UIImage? {
+    func imageDataWithIdentifier(identifier: String?) -> NSData? {
         
         // If the identifier is nil, or empty, return nil
         if identifier == nil || identifier! == "" {
@@ -49,13 +46,13 @@ class ImageCache {
         let path = pathForIdentifier(identifier!)
         
         // First try the memory cache
-        if let image = memoryStorage.objectForKey(path) as? UIImage {
-            return image
+        if let data = inMemoryCache.objectForKey(path) as? NSData {
+            return data
         }
         
         // Next Try the hard drive
         if let data = NSData(contentsOfFile: path) {
-            return UIImage(data: data)
+            return data
         }
         return nil
     }
