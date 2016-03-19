@@ -85,7 +85,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         CoreDataStackManager.sharedInstance().saveContext()
         
         //start to download image once new Pin object was created
-        //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
             
             FlickrClient.sharedInstance().getPhotosFromFlickr(newPin.latitude, dropPinLongitude: newPin.longitude, completionHandler: {(success, parsedResult, errorString) in
                 
@@ -102,6 +102,15 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
                             photo.dropPin = newPin
                             CoreDataStackManager.sharedInstance().saveContext()
 
+                            FlickrClient.sharedInstance().taskForImage(photo.imageUrlString!, completionHandler: {(data, error) in
+                                    
+                                if let error = error {
+                                    print("Image download error: \(error.localizedDescription)")
+                                }
+                                if let data = data {
+                                    photo.imageData = data
+                                }
+                            })
                             return photo
                         }
                     } else {
@@ -109,7 +118,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
                     }
                 }
             })
-        //}
+        }
     }
     
     //CoreData help function

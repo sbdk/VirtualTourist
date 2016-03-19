@@ -32,7 +32,6 @@ class Photo: NSManagedObject {
         }
         set {
             FlickrClient.Caches.imageCache.storeImageData(newValue, withIdentifier: imageUrlString!)
-            print("data start to set into storage")
         }
     }
 }
