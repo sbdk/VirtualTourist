@@ -87,11 +87,15 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         //start to download image once new Pin object was created
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
             
-            FlickrClient.sharedInstance().getPhotosFromFlickr(newPin.latitude, dropPinLongitude: newPin.longitude, completionHandler: {(success, parsedResult, errorString) in
+            FlickrClient.sharedInstance().getPhotosFromFlickr(newPin.latitude, dropPinLongitude: newPin.longitude, pageToReturn: 1, completionHandler: {(success, parsedResult, errorString) in
                 
                 if let error = errorString {
                     print(error)
                 } else {
+                    if let returnedTotalPages = parsedResult!["pages"] as? Int {
+                        newPin.totalPages = returnedTotalPages
+                        print("total pages: \(newPin.totalPages)")
+                    }
                     if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
                         
                         _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in

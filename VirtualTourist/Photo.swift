@@ -17,15 +17,12 @@ class Photo: NSManagedObject {
     override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
         super.init(entity: entity, insertIntoManagedObjectContext: context)
     }
-    
     init(dictionary: [String : AnyObject], context: NSManagedObjectContext) {
         
         let entity =  NSEntityDescription.entityForName("Photo", inManagedObjectContext: context)!
         super.init(entity: entity, insertIntoManagedObjectContext: context)
-        
         imageUrlString = dictionary["url_s"] as? String
     }
-    
     var imageData: NSData? {
         get {
             return FlickrClient.Caches.imageCache.imageDataWithIdentifier(imageUrlString)

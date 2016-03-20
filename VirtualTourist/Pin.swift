@@ -15,27 +15,19 @@ class Pin: NSManagedObject, MKAnnotation {
     @NSManaged var latitude: Double
     @NSManaged var longitude: Double
     @NSManaged var photos: [Photo]
+    @NSManaged var totalPages: NSNumber
     
     //Standard Core Data init method.
     override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
         super.init(entity: entity, insertIntoManagedObjectContext: context)
     }
-    
     init(newPinlatitude: CLLocationDegrees, newPinlongitude: CLLocationDegrees, context: NSManagedObjectContext){
         let entity =  NSEntityDescription.entityForName("Pin", inManagedObjectContext: context)!
         super.init(entity: entity,insertIntoManagedObjectContext: context)
         latitude = newPinlatitude
         longitude = newPinlongitude
-        
-        //let formatter = NSDateFormatter()
-        //formatter.dateStyle = NSDateFormatterStyle.MediumStyle
-        //formatter.timeStyle = .LongStyle
-        //let titleString = formatter.stringFromDate(NSDate())
-        //title = titleString
     }
-    
     var coordinate: CLLocationCoordinate2D {
-        
         return CLLocationCoordinate2DMake(latitude, longitude)
     }
 }

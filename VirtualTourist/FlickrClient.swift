@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 
 
 class FlickrClient: NSObject {
@@ -27,7 +28,7 @@ class FlickrClient: NSObject {
     
     let BASE_URL = "https://api.flickr.com/services/rest/"
     
-    func getPhotosFromFlickr(dropPinLatitude: Double, dropPinLongitude: Double, completionHandler: (success: Bool, parsedReuslt: [String: AnyObject]?, errorString: String?) -> Void) {
+    func getPhotosFromFlickr(dropPinLatitude: Double, dropPinLongitude: Double, pageToReturn: Int, completionHandler: (success: Bool, parsedReuslt: [String: AnyObject]?, errorString: String?) -> Void) {
         
         let methodParameters = [
             "method": "flickr.photos.search",
@@ -37,7 +38,8 @@ class FlickrClient: NSObject {
             "extras": "url_s",
             "format": "json",
             "nojsoncallback": "1",
-            "per_page":"18",
+            "per_page":"15",
+            "page":"\(pageToReturn)",
             "lat": "\(dropPinLatitude)",
             "lon": "\(dropPinLongitude)",
             "radius":"1"
@@ -110,6 +112,47 @@ class FlickrClient: NSObject {
         return task
     }
     
+    //convenience function for load image
+    func getPhotos(pin: Pin, page: Int){
+        
+        getPhotosFromFlickr(pin.latitude, dropPinLongitude: pin.longitude, pageToReturn: page, completionHandler: {(success, parsedResult, errorString) in
+        
+            if let error = errorString{
+                print(error.lowercaseString)
+            } else {
+                
+                if let returnedTotalPages = parsedResult!["pages"] as? Int {
+                    pin.totalPages = returnedTotalPages
+                    print("total pages: \(pin.totalPages)")
+                }
+                if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
+                    
+                    _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
+                        let photo = Photo(dictionary: dictionary, context: self.sharedContext)
+                        print(photo.imageUrlString!)
+                        
+                        //assign relationship between Pin and Photo object
+                        photo.dropPin = pin
+                        CoreDataStackManager.sharedInstance().saveContext()
+                        
+                        self.taskForImage(photo.imageUrlString!, completionHandler: {(data, error) in
+                            
+                            if let error = error {
+                                print("Image download error: \(error.localizedDescription)")
+                            }
+                            if let data = data {
+                                photo.imageData = data
+                            }
+                        })
+                        return photo
+                    }
+                } else {
+                    print("there is no photo at this location")
+                }
+            }
+        })
+    }
+    
     /* Helper function: Given a dictionary of parameters, convert to a string for a url */
     func escapedParameters(parameters: [String : AnyObject]) -> String {
         var urlVars = [String]()
@@ -124,7 +167,9 @@ class FlickrClient: NSObject {
         return (!urlVars.isEmpty ? "?" : "") + urlVars.joinWithSeparator("&")
     }
     
-    
+    lazy var sharedContext: NSManagedObjectContext = {
+        return CoreDataStackManager.sharedInstance().managedObjectContext
+    }()
     
     func pathForIdentifier(identifier: String) -> String {
         let documentsDirectoryURL: NSURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!

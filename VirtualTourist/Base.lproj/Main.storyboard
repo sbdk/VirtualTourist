@@ -109,7 +109,11 @@
                                 </constraints>
                                 <items>
                                     <barButtonItem style="plain" systemItem="flexibleSpace" id="yLY-z2-aVd"/>
-                                    <barButtonItem title="New Collection" id="1M2-Cp-lvg"/>
+                                    <barButtonItem title="New Collection" id="1M2-Cp-lvg">
+                                        <connections>
+                                            <action selector="newCollectionButtonTouch:" destination="6LS-ov-F4K" id="TDY-EV-Y8e"/>
+                                        </connections>
+                                    </barButtonItem>
                                     <barButtonItem style="plain" systemItem="flexibleSpace" id="JRn-q5-5ch"/>
                                 </items>
                             </toolbar>

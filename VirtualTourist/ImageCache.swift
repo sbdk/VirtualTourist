@@ -25,14 +25,11 @@ class ImageCache {
             } catch _ {}
             return
         }
-        
         // Otherwise, keep the image in memory
         inMemoryCache.setObject(imageData!, forKey: path)
-        print("data set into memory success")
         
         // And in documents directory
         imageData!.writeToFile(path, atomically: true)
-        print("imageData set into disk success")
     }
     
     // MARK: - Retreiving images
