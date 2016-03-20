@@ -14,6 +14,7 @@ import CoreData
 class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     
     @IBOutlet weak var mapView: MKMapView!
+    @IBOutlet weak var deletePinAlertLabel: UILabel!
     
     //mapView help function
     func centerMapOnLocation(location: CLLocation){
@@ -30,6 +31,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        deletePinAlertLabel.hidden = true
         navigationItem.rightBarButtonItem = self.editButtonItem()
         mapView.delegate = self
         mapView.addAnnotations(fetchAllPins())
@@ -66,11 +68,21 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     }
     
     func mapView(mapView: MKMapView, didSelectAnnotationView view: MKAnnotationView) {
-        let controller = self.storyboard?.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
-        let pin = view.annotation as! Pin
-        controller.pin = pin
-        self.navigationController?.pushViewController(controller, animated: true)
-        mapView.deselectAnnotation(view.annotation, animated: true)
+        
+        if editing{
+            
+            let pin = view.annotation as! Pin
+            sharedContext.deleteObject(pin)
+            mapView.removeAnnotation(view.annotation!)
+            CoreDataStackManager.sharedInstance().saveContext()
+            
+        } else {
+            let controller = self.storyboard?.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
+            let pin = view.annotation as! Pin
+            controller.pin = pin
+            self.navigationController?.pushViewController(controller, animated: true)
+            mapView.deselectAnnotation(view.annotation, animated: true)
+        }
     }
     
     func dropNewPin(gestureRecognizer: UIGestureRecognizer){
@@ -137,6 +149,15 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         } catch let error as NSError {
             print("Error in fetchAllActors(): \(error)")
             return [Pin]()
+        }
+    }
+    
+    override func setEditing(editing: Bool, animated: Bool) {
+        super.setEditing(editing, animated: animated)
+        if editing{
+            self.deletePinAlertLabel.hidden = false
+        } else {
+            self.deletePinAlertLabel.hidden = true
         }
     }
 }
