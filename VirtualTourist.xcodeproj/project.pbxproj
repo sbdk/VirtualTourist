@@ -19,6 +19,7 @@
 		BE1345291C9356BA005200A6 /* Pin.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE1345281C9356BA005200A6 /* Pin.swift */; };
 		BE13452B1C9356C8005200A6 /* Photo.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE13452A1C9356C8005200A6 /* Photo.swift */; };
 		BE13452D1C936C7C005200A6 /* CoreDataStackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE13452C1C936C7C005200A6 /* CoreDataStackManager.swift */; };
+		BE5EB37C1C9FAF2100D8A394 /* MapRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5EB37B1C9FAF2100D8A394 /* MapRegion.swift */; };
 		BE7B1F6C1C98974F00A8D809 /* FlickrClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7B1F6B1C98974F00A8D809 /* FlickrClient.swift */; };
 		BE7B1FA21C9A0D2E00A8D809 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE7B1FA11C9A0D2E00A8D809 /* MapKit.framework */; };
 		BE7B1FA41C9A4A2200A8D809 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7B1FA31C9A4A2200A8D809 /* ImageCache.swift */; };
@@ -61,6 +62,7 @@
 		BE1345281C9356BA005200A6 /* Pin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Pin.swift; sourceTree = "<group>"; };
 		BE13452A1C9356C8005200A6 /* Photo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Photo.swift; sourceTree = "<group>"; };
 		BE13452C1C936C7C005200A6 /* CoreDataStackManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreDataStackManager.swift; sourceTree = "<group>"; };
+		BE5EB37B1C9FAF2100D8A394 /* MapRegion.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapRegion.swift; sourceTree = "<group>"; };
 		BE7B1F6B1C98974F00A8D809 /* FlickrClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FlickrClient.swift; sourceTree = "<group>"; };
 		BE7B1FA11C9A0D2E00A8D809 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		BE7B1FA31C9A4A2200A8D809 /* ImageCache.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
@@ -126,6 +128,7 @@
 				BE1344F71C935143005200A6 /* Main.storyboard */,
 				BE1345281C9356BA005200A6 /* Pin.swift */,
 				BE13452A1C9356C8005200A6 /* Photo.swift */,
+				BE5EB37B1C9FAF2100D8A394 /* MapRegion.swift */,
 				BE1344FD1C935143005200A6 /* Assets.xcassets */,
 				BE1344FF1C935143005200A6 /* LaunchScreen.storyboard */,
 				BE1344F31C935143005200A6 /* AppDelegate.swift */,
@@ -292,6 +295,7 @@
 				BE7B1FA41C9A4A2200A8D809 /* ImageCache.swift in Sources */,
 				BE13452B1C9356C8005200A6 /* Photo.swift in Sources */,
 				BE1345291C9356BA005200A6 /* Pin.swift in Sources */,
+				BE5EB37C1C9FAF2100D8A394 /* MapRegion.swift in Sources */,
 				BE1344F41C935143005200A6 /* AppDelegate.swift in Sources */,
 				BED6078A1C97E5500061980C /* PhotoAlbumCollectionViewCell.swift in Sources */,
 				BE13452D1C936C7C005200A6 /* CoreDataStackManager.swift in Sources */,

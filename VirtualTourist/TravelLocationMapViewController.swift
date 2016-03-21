@@ -16,21 +16,21 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var deletePinAlertLabel: UILabel!
     
-    var readyForNextView: Bool = true
-    
-    //mapView help function
-    func centerMapOnLocation(location: CLLocation){
-        let regionRadius: CLLocationDistance = 10000
-        let coordinateRegion = MKCoordinateRegionMakeWithDistance(location.coordinate, regionRadius * 2.0, regionRadius * 2.0)
-        mapView.setRegion(coordinateRegion, animated: true)
-    }
-    
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
-        let initialLocation = CLLocation(latitude: 40.709299, longitude: -74.006562)
-        centerMapOnLocation(initialLocation)
+        
+        //first check CoreData for stored map region, if exist, set the mapView with stored map region
+        if let savedMapRegion = fetchStoredMapRegion() {
+            let savedRegionCenterCoordinate = CLLocationCoordinate2DMake(savedMapRegion.centerLat, savedMapRegion.centerLon)
+            let savedRegionSpan = MKCoordinateSpanMake(savedMapRegion.spanLat, savedMapRegion.spanLon)
+            let savedRegion = MKCoordinateRegionMake(savedRegionCenterCoordinate, savedRegionSpan)
+            mapView.setRegion(savedRegion, animated: true)
+            
+            //once a stored map region has been used, delete this stored region to keep MapRegion CoreData clean and empty.
+            sharedContext.deleteObject(savedMapRegion)
+            CoreDataStackManager.sharedInstance().saveContext()
+        }
     }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         deletePinAlertLabel.hidden = true
@@ -48,6 +48,14 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     }
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
+    }
+    
+    override func viewWillDisappear(animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        //whenever the view will disappear, save the current map region into CoreData
+        _ = MapRegion(mapView: mapView, context: sharedContext) as MapRegion
+        CoreDataStackManager.sharedInstance().saveContext()
     }
     
     //mapView
@@ -69,7 +77,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     }
     
     func mapView(mapView: MKMapView, annotationView view: MKAnnotationView, didChangeDragState newState: MKAnnotationViewDragState, fromOldState oldState: MKAnnotationViewDragState) {
-        
+    
     }
     
     func mapView(mapView: MKMapView, didSelectAnnotationView view: MKAnnotationView) {
@@ -88,10 +96,17 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
 //            for photo in pin.photos{
 //                if photo.imageData == nil{
 //                    readyForNextView = false
+//                    self.downloadPhotoTask?.cancel()
 //                }
 //            }
 //            if !readyForNextView {
-//                pin.photos = []
+//                    
+//                for photo in controller.pin.photos {
+//                    //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
+//                    photo.imageData = nil
+//                    sharedContext.deleteObject(photo)
+//                }
+//                CoreDataStackManager.sharedInstance().saveContext()
 //            }
             self.navigationController?.pushViewController(controller, animated: true)
             mapView.deselectAnnotation(view.annotation, animated: true)
@@ -112,7 +127,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         //start to download image once new Pin object was created
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
             
-            FlickrClient.sharedInstance().getPhotosFromFlickr(newPin.latitude, dropPinLongitude: newPin.longitude, pageToReturn: 1, completionHandler: {(success, parsedResult, errorString) in
+                FlickrClient.sharedInstance().getPhotosFromFlickr(newPin.latitude, dropPinLongitude: newPin.longitude, pageToReturn: 1, completionHandler: {(success, parsedResult, errorString) in
                 
                 if let error = errorString {
                     print(error)
@@ -162,6 +177,17 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         } catch let error as NSError {
             print("Error in fetchAllActors(): \(error)")
             return [Pin]()
+        }
+    }
+    
+    func fetchStoredMapRegion() -> MapRegion? {
+        let fetchRequest = NSFetchRequest(entityName: "MapRegion")
+        do{
+            //since MapRegion CoreData will be cleaned once used, therefore the first item in fetched result is also the only one and the most up-to-date MapRegion Object
+            return try sharedContext.executeFetchRequest(fetchRequest).first as? MapRegion
+        } catch let error as NSError {
+            print("Error in fetchAllActors(): \(error)")
+            return nil
         }
     }
     
