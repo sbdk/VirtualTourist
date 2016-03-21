@@ -16,6 +16,8 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var deletePinAlertLabel: UILabel!
     
+    var readyForNextView: Bool = true
+    
     //mapView help function
     func centerMapOnLocation(location: CLLocation){
         let regionRadius: CLLocationDistance = 10000
@@ -32,6 +34,9 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         deletePinAlertLabel.hidden = true
+        deletePinAlertLabel.layer.masksToBounds = true
+        deletePinAlertLabel.layer.cornerRadius = 5
+        
         navigationItem.rightBarButtonItem = self.editButtonItem()
         mapView.delegate = self
         mapView.addAnnotations(fetchAllPins())
@@ -80,6 +85,14 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
             let controller = self.storyboard?.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
             let pin = view.annotation as! Pin
             controller.pin = pin
+//            for photo in pin.photos{
+//                if photo.imageData == nil{
+//                    readyForNextView = false
+//                }
+//            }
+//            if !readyForNextView {
+//                pin.photos = []
+//            }
             self.navigationController?.pushViewController(controller, animated: true)
             mapView.deselectAnnotation(view.annotation, animated: true)
         }

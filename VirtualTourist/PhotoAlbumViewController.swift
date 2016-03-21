@@ -21,6 +21,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     var pin: Pin!
     var totalPages: Int = 0
     var randomPage: Int = 0
+    var photosToBeLoaded: Int = 0
     var selectedIndexes = [NSIndexPath]()
     var insertedIndexPaths: [NSIndexPath]!
     var deletedIndexPaths: [NSIndexPath]!
@@ -48,6 +49,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         
         collectionView.allowsMultipleSelection = true
         totalPages = Int(pin.totalPages)
+        photosToBeLoaded = pin.photos.count
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -61,7 +63,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             noImageLabel.layer.zPosition = 2
             newCollectionButton.enabled = false
             
-            
             FlickrClient.sharedInstance().getPhotosFromFlickr(pin.latitude, dropPinLongitude: pin.longitude, pageToReturn: 1, completionHandler: {(success, parsedResult, errorString) in
                 
                 if let error = errorString {
@@ -71,24 +72,20 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                     if let returnedTotalPages = parsedResult!["pages"] as? Int {
                         self.totalPages = returnedTotalPages
                     }
-                    
                     if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
                         
                         _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
                         
                             let photo = Photo(dictionary: dictionary, context: self.sharedContext)
                             photo.dropPin = self.pin
-                            //print(photo.imageUrlString!)
-                            
-                            CoreDataStackManager.sharedInstance().saveContext()
                             return photo
                         }
-                        //since we set pageToReturn to 1, this function will get called and updated UI anyway. Set a total page check here to make sure UI didn't get updated when no image exist
-                        if self.totalPages > 0 {
-                            dispatch_async(dispatch_get_main_queue()) {
-                                self.noImageLabel.hidden = true
-                                self.newCollectionButton.enabled = true
-                                self.collectionView.reloadData()
+                        self.photosToBeLoaded = self.pin.photos.count
+                        print("there are \(self.photosToBeLoaded) photos need to be loaded")
+                        CoreDataStackManager.sharedInstance().saveContext()
+                        dispatch_async(dispatch_get_main_queue()) {
+                            if self.photosToBeLoaded > 0 {
+                            self.noImageLabel.hidden = true
                             }
                         }
                     }
@@ -118,10 +115,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         } else {
             collectionCell.photoImageView.alpha = 1
         }
-        
         collectionCell.photoImageView.contentMode = .ScaleAspectFill
         configureCell(collectionCell, photo: photo)
-        
         return collectionCell
     }
     
@@ -141,7 +136,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
        
         let selectedCell = collectionView.cellForItemAtIndexPath(indexPath) as! PhotoAlbumCollectionViewCell
         selectedCell.photoImageView.alpha = 0.5
-        checkSelectedCell()
+        updateButtonTitile()
         
     }
     
@@ -149,10 +144,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         
         let selectedCell = collectionView.cellForItemAtIndexPath(indexPath) as! PhotoAlbumCollectionViewCell
         selectedCell.photoImageView.alpha = 1
-        checkSelectedCell()
+        updateButtonTitile()
     }
-    
-    
     //implemente FetchedResultController Delegate Method
     func controllerWillChangeContent(controller: NSFetchedResultsController) {
         
@@ -238,6 +231,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         }
         //if photo object has Url info but don' have stored image info:
         else {
+            self.newCollectionButton.enabled = false
             let task = FlickrClient.sharedInstance().taskForImage(photo.imageUrlString!) { data, error in
                 
                 if let error = error {
@@ -248,10 +242,17 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                     
                     // update the model
                     photo.imageData = returnedData
-                    
+
                     // update the cell later, on the main thread
                     dispatch_async(dispatch_get_main_queue()) {
                         cell.photoImageView.image = UIImage(data: returnedData)
+                        self.photosToBeLoaded--
+                        print("loaded 1 photo, there are \(self.photosToBeLoaded) photos left to be loaded")
+                        //if all photos have been loaded into cell, we set newCollectonButton status to enable
+                        if (self.photosToBeLoaded) == 0 {
+                            self.newCollectionButton.enabled = true
+                            print("all photos are loaded, set new CollectionButton enable")
+                        }
                     }
                 }
             }
@@ -264,26 +265,32 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         
         //if there is any photo selected, perform delete function
         if collectionView.indexPathsForSelectedItems()!.count > 0 {
-            print("delete selected photos")
+            print("start to delete selected photos")
             var photoToDelete = [Photo]()
             for indexPath in self.collectionView.indexPathsForSelectedItems()!{
                 photoToDelete.append(self.fetchedResultsController.objectAtIndexPath(indexPath) as! Photo)
             }
             for photo in photoToDelete{
+                photo.imageData = nil
                 sharedContext.deleteObject(photo)
             }
             CoreDataStackManager.sharedInstance().saveContext()
         }
         // if no photo has been selected, perform update functioin
         else {
+            //each time press newCollectionButton, we set it back to disable again for cell load status check
+            self.newCollectionButton.enabled = false
+            self.photosToBeLoaded = 0
             
             for photo in pin.photos {
+                //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
+                photo.imageData = nil
                 sharedContext.deleteObject(photo)
             }
             CoreDataStackManager.sharedInstance().saveContext()
             
             print("Total pages available in PhotoAlbumView: \(totalPages)")
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
+            //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
                 
                 //here we define a randomPage variable to be within 1-50, since Flickr has total image return limit and performance issue
                 self.randomPage = Int(arc4random_uniform(UInt32(50))) + 1
@@ -302,28 +309,23 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                     } else {
                         //load new data into CoreData
                         if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
-                            
                             _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
                                 let photo = Photo(dictionary: dictionary, context: self.sharedContext)
                                 photo.dropPin = self.pin
-                                //print(photo.imageUrlString!)
-                                
                                 CoreDataStackManager.sharedInstance().saveContext()
                                 return photo
                             }
-                            dispatch_async(dispatch_get_main_queue()) {
-                                self.noImageLabel.hidden = true
-                                self.newCollectionButton.enabled = true
-                            }
                         }
+                        self.photosToBeLoaded = self.pin.photos.count
+                        print("there are \(self.photosToBeLoaded) photos need to be loaded")
                     }
                 })
-            }
+            //}
         }
-        checkSelectedCell()
+        updateButtonTitile()
     }
     
-    func checkSelectedCell(){
+    func updateButtonTitile(){
         
         if collectionView.indexPathsForSelectedItems()!.count > 0 {
             let count = collectionView.indexPathsForSelectedItems()!.count

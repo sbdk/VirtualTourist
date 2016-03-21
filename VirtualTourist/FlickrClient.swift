@@ -106,7 +106,6 @@ class FlickrClient: NSObject {
                 completionHandler(imageData: data, error: nil)
             }
         }
-        
         task.resume()
         
         return task
