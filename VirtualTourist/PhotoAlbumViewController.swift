@@ -19,9 +19,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
     var pin: Pin!
-    var totalPages: Int = 0
+//    var totalPages: Int = 0
     var randomPage: Int = 0
     var photosToBeLoaded: Int = 0
+//    var preloadedImageCount: Int = 0
     var selectedIndexes = [NSIndexPath]()
     var insertedIndexPaths: [NSIndexPath]!
     var deletedIndexPaths: [NSIndexPath]!
@@ -48,8 +49,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         
         
         collectionView.allowsMultipleSelection = true
-        totalPages = Int(pin.totalPages)
+//        totalPages = Int(pin.totalPages)
         photosToBeLoaded = pin.photos.count
+        
+//        print("preloaded \(self.preloadedImageCount) photos")
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -70,7 +73,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                 } else {
                     //set totalPages property for later use
                     if let returnedTotalPages = parsedResult!["pages"] as? Int {
-                        self.totalPages = returnedTotalPages
+                        self.pin.totalPages = returnedTotalPages
                     }
                     if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
                         
@@ -281,6 +284,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             //each time press newCollectionButton, we set it back to disable again for cell load status check
             self.newCollectionButton.enabled = false
             self.photosToBeLoaded = 0
+//            self.preloadedImageCount = 0
             
             for photo in pin.photos {
                 //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
@@ -289,15 +293,15 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             }
             CoreDataStackManager.sharedInstance().saveContext()
             
-            print("Total pages available in PhotoAlbumView: \(totalPages)")
+            print("Total pages available in PhotoAlbumView: \(pin.totalPages)")
             //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
                 
                 //here we define a randomPage variable to be within 1-50, since Flickr has total image return limit and performance issue
                 self.randomPage = Int(arc4random_uniform(UInt32(50))) + 1
                 
                 //also we need to check that the randomPage will not be bigger than totalPages for this Pin.
-                if self.randomPage > self.totalPages {
-                    self.randomPage = Int(arc4random_uniform(UInt32(self.totalPages))) + 1
+                if self.randomPage > Int(pin.totalPages) {
+                    self.randomPage = Int(arc4random_uniform(UInt32(Int(self.pin.totalPages)))) + 1
                 } else {}
                 
                 print("update with randomPage: \(self.randomPage)")

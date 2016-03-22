@@ -28,7 +28,7 @@ class FlickrClient: NSObject {
     
     let BASE_URL = "https://api.flickr.com/services/rest/"
     
-    func getPhotosFromFlickr(dropPinLatitude: Double, dropPinLongitude: Double, pageToReturn: Int, completionHandler: (success: Bool, parsedReuslt: [String: AnyObject]?, errorString: String?) -> Void) {
+    func getPhotosFromFlickr(dropPinLatitude: Double, dropPinLongitude: Double, pageToReturn: Int, completionHandler: (success: Bool, parsedReuslt: [String: AnyObject]?, errorString: String?) -> Void) -> NSURLSessionTask {
         
         let methodParameters = [
             "method": "flickr.photos.search",
@@ -91,12 +91,13 @@ class FlickrClient: NSObject {
             }
         }
         task.resume()
+        return task
     }
     
     func taskForImage(filePath: String, completionHandler: (imageData: NSData?, error: NSError?) ->  Void) -> NSURLSessionTask {
         
         let request = NSURLRequest(URL: NSURL(string: filePath)!)
-        
+        let session = NSURLSession.sharedSession()
         let task = session.dataTaskWithRequest(request) {data, response, downloadError in
             
             if let error = downloadError {
