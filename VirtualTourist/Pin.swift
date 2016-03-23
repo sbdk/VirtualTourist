@@ -14,8 +14,9 @@ class Pin: NSManagedObject, MKAnnotation {
     
     @NSManaged var latitude: Double
     @NSManaged var longitude: Double
-    @NSManaged var photos: [Photo]
     @NSManaged var totalPages: NSNumber
+    @NSManaged var photos: [Photo]
+
     
     //Standard Core Data init method.
     override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {

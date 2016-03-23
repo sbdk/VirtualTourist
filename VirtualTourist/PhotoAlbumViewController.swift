@@ -19,20 +19,13 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
     var pin: Pin!
-//    var totalPages: Int = 0
     var randomPage: Int = 0
     var photosToBeLoaded: Int = 0
-//    var preloadedImageCount: Int = 0
+    var preloadedImageCount: Int = 0
     var selectedIndexes = [NSIndexPath]()
     var insertedIndexPaths: [NSIndexPath]!
     var deletedIndexPaths: [NSIndexPath]!
     var updatedIndexPaths: [NSIndexPath]!
-    
-    func centerMapOnLocation(location: CLLocation){
-        let regionRadius: CLLocationDistance = 2000
-        let coordinateRegion = MKCoordinateRegionMakeWithDistance(location.coordinate, regionRadius * 2.0, regionRadius * 2.0)
-        mapView.setRegion(coordinateRegion, animated: true)
-    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,12 +40,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         } catch {}
         fetchedResultsController.delegate = self
         
-        
+        //set collectionView
         collectionView.allowsMultipleSelection = true
-//        totalPages = Int(pin.totalPages)
         photosToBeLoaded = pin.photos.count
-        
-//        print("preloaded \(self.preloadedImageCount) photos")
+        print("new view preloaded \(preloadedImageCount) photos")
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -67,7 +58,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             newCollectionButton.enabled = false
             
             FlickrClient.sharedInstance().getPhotosFromFlickr(pin.latitude, dropPinLongitude: pin.longitude, pageToReturn: 1, completionHandler: {(success, parsedResult, errorString) in
-                
                 if let error = errorString {
                     print(error)
                 } else {
@@ -76,9 +66,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                         self.pin.totalPages = returnedTotalPages
                     }
                     if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
-                        
                         _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
-                        
                             let photo = Photo(dictionary: dictionary, context: self.sharedContext)
                             photo.dropPin = self.pin
                             return photo
@@ -108,9 +96,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         return sessionInfo.numberOfObjects
     }
     
-    
     func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
-        
         let collectionCell = collectionView.dequeueReusableCellWithReuseIdentifier("PhotoAlbumCollectionViewCell", forIndexPath: indexPath) as! PhotoAlbumCollectionViewCell
         let photo = fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
         if collectionCell.selected{
@@ -124,7 +110,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func collectionView(collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAtIndexPath indexPath: NSIndexPath) -> CGSize {
-        
         let space: CGFloat = 3.0
         var dimension: CGFloat
         flowLayout.minimumInteritemSpacing = space
@@ -136,61 +121,46 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
-       
         let selectedCell = collectionView.cellForItemAtIndexPath(indexPath) as! PhotoAlbumCollectionViewCell
         selectedCell.photoImageView.alpha = 0.5
         updateButtonTitile()
-        
     }
     
     func collectionView(collectionView: UICollectionView, didDeselectItemAtIndexPath indexPath: NSIndexPath) {
-        
         let selectedCell = collectionView.cellForItemAtIndexPath(indexPath) as! PhotoAlbumCollectionViewCell
         selectedCell.photoImageView.alpha = 1
         updateButtonTitile()
     }
+    
     //implemente FetchedResultController Delegate Method
     func controllerWillChangeContent(controller: NSFetchedResultsController) {
-        
         insertedIndexPaths = [NSIndexPath]()
         deletedIndexPaths = [NSIndexPath]()
         updatedIndexPaths = [NSIndexPath]()
     }
-    //
-    // This is the most interesting method. Take particular note of way the that newIndexPath
-    // parameter gets unwrapped and put into an array literal: [newIndexPath!]
-    //
-    
     func controller(controller: NSFetchedResultsController,
         didChangeObject anObject: AnyObject,
         atIndexPath indexPath: NSIndexPath?,
         forChangeType type: NSFetchedResultsChangeType,
         newIndexPath: NSIndexPath?) {
-            
             switch type {
             case .Insert:
                 insertedIndexPaths.append(newIndexPath!)
                 break
-                
             case .Delete:
                 deletedIndexPaths.append(indexPath!)
                 break
-                
             case .Update:
                 updatedIndexPaths.append(indexPath!)
                 break
-                
             case .Move:
                 break
-                
             default:
                 break
             }
     }
-    
     func controllerDidChangeContent(controller: NSFetchedResultsController) {
         collectionView.performBatchUpdates({
-            
             for indexPath in self.insertedIndexPaths{
                 self.collectionView.insertItemsAtIndexPaths([indexPath])
             }
@@ -200,18 +170,16 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             for indexPath in self.updatedIndexPaths {
                 self.collectionView.reloadItemsAtIndexPaths([indexPath])
             }
-            
-            },completion: nil)
+        },completion: nil)
     }
     
-    //set convenience var for sharedContext
+    //set convenience var for CoreData Shared context
     lazy var sharedContext: NSManagedObjectContext = {
         return CoreDataStackManager.sharedInstance().managedObjectContext
     }()
     
     //set lazy var for fetchedResultsController
     lazy var fetchedResultsController: NSFetchedResultsController = {
-        
         let fetchRequest = NSFetchRequest(entityName: "Photo")
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "imageUrlString", ascending: true)]
         fetchRequest.predicate = NSPredicate(format: "dropPin == %@", self.pin)
@@ -219,14 +187,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         return fetchedResultController
     }()
     
-    
     //collectionView help function
     func configureCell(cell: PhotoAlbumCollectionViewCell, photo: Photo) {
-        
         var cellImage = UIImage(named: "placeHolder")
-        
         cell.photoImageView.image = nil
-        
         if photo.imageUrlString == nil || photo.imageUrlString == "" {
             cellImage = UIImage(named: "placeHolder")
         } else if photo.imageData != nil {
@@ -236,23 +200,18 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         else {
             self.newCollectionButton.enabled = false
             let task = FlickrClient.sharedInstance().taskForImage(photo.imageUrlString!) { data, error in
-                
                 if let error = error {
                     print("Image download error: \(error.localizedDescription)")
                 }
-                
                 if let returnedData = data {
-                    
-                    // update the model
                     photo.imageData = returnedData
-
                     // update the cell later, on the main thread
                     dispatch_async(dispatch_get_main_queue()) {
                         cell.photoImageView.image = UIImage(data: returnedData)
                         self.photosToBeLoaded--
-                        print("loaded 1 photo, there are \(self.photosToBeLoaded) photos left to be loaded")
+                        print("loaded 1 photo, \(self.photosToBeLoaded) photos left to be loaded")
                         //if all photos have been loaded into cell, we set newCollectonButton status to enable
-                        if (self.photosToBeLoaded) == 0 {
+                        if self.photosToBeLoaded == 0 {
                             self.newCollectionButton.enabled = true
                             print("all photos are loaded, set new CollectionButton enable")
                         }
@@ -265,7 +224,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     @IBAction func newCollectionButtonTouch(sender: AnyObject) {
-        
         //if there is any photo selected, perform delete function
         if collectionView.indexPathsForSelectedItems()!.count > 0 {
             print("start to delete selected photos")
@@ -281,11 +239,12 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         }
         // if no photo has been selected, perform update functioin
         else {
-            //each time press newCollectionButton, we set it back to disable again for cell load status check
-            self.newCollectionButton.enabled = false
-            self.photosToBeLoaded = 0
-//            self.preloadedImageCount = 0
+            //each time press newCollectionButton, we set newCollectionButton back to disable again and clear all the tracking counter
+            newCollectionButton.enabled = false
+            photosToBeLoaded = 0
+            preloadedImageCount = 0
             
+            //then we remove current album from CoreData
             for photo in pin.photos {
                 //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
                 photo.imageData = nil
@@ -294,20 +253,17 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             CoreDataStackManager.sharedInstance().saveContext()
             
             print("Total pages available in PhotoAlbumView: \(pin.totalPages)")
-            //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
-                
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
                 //here we define a randomPage variable to be within 1-50, since Flickr has total image return limit and performance issue
                 self.randomPage = Int(arc4random_uniform(UInt32(50))) + 1
                 
-                //also we need to check that the randomPage will not be bigger than totalPages for this Pin.
-                if self.randomPage > Int(pin.totalPages) {
+                //We also need to check that the randomPage will not be bigger than totalPages for this Pin.
+                if self.randomPage > Int(self.pin.totalPages) {
                     self.randomPage = Int(arc4random_uniform(UInt32(Int(self.pin.totalPages)))) + 1
                 } else {}
-                
                 print("update with randomPage: \(self.randomPage)")
                 
                 FlickrClient.sharedInstance().getPhotosFromFlickr(self.pin.latitude, dropPinLongitude: self.pin.longitude, pageToReturn: self.randomPage, completionHandler: {(success, parsedResult, errorString) in
-                    
                     if let error = errorString {
                         print(error)
                     } else {
@@ -324,18 +280,24 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                         print("there are \(self.photosToBeLoaded) photos need to be loaded")
                     }
                 })
-            //}
+            }
         }
         updateButtonTitile()
     }
     
     func updateButtonTitile(){
-        
         if collectionView.indexPathsForSelectedItems()!.count > 0 {
             let count = collectionView.indexPathsForSelectedItems()!.count
             newCollectionButton.title = "Delete Selected \(count) Photos"
         } else {
             newCollectionButton.title = "New Collection"
         }
+    }
+    
+    //mapView help function
+    func centerMapOnLocation(location: CLLocation){
+        let regionRadius: CLLocationDistance = 2000
+        let coordinateRegion = MKCoordinateRegionMakeWithDistance(location.coordinate, regionRadius * 2.0, regionRadius * 2.0)
+        mapView.setRegion(coordinateRegion, animated: true)
     }
 }

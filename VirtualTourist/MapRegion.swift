@@ -20,10 +20,10 @@ class MapRegion: NSManagedObject {
     override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
         super.init(entity: entity, insertIntoManagedObjectContext: context)
     }
+    
     init(mapView: MKMapView, context: NSManagedObjectContext){
         let entity =  NSEntityDescription.entityForName("MapRegion", inManagedObjectContext: context)!
         super.init(entity: entity,insertIntoManagedObjectContext: context)
-        
         centerLat = mapView.region.center.latitude
         centerLon = mapView.region.center.longitude
         spanLat = mapView.region.span.latitudeDelta

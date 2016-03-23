@@ -39,9 +39,8 @@ class ImageCache {
         if identifier == nil || identifier! == "" {
             return nil
         }
-        
         let path = pathForIdentifier(identifier!)
-        
+
         // First try the memory cache
         if let data = inMemoryCache.objectForKey(path) as? NSData {
             return data
@@ -57,7 +56,6 @@ class ImageCache {
     func pathForIdentifier(identifier: String) -> String {
         let documentsDirectoryURL: NSURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!
         let fullURL = documentsDirectoryURL.URLByAppendingPathComponent(identifier)
-        
         return fullURL.path!
     }
 }

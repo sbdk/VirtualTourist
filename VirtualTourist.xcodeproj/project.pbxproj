@@ -119,21 +119,17 @@
 		BE1344F21C935143005200A6 /* VirtualTourist */ = {
 			isa = PBXGroup;
 			children = (
-				BE1344FA1C935143005200A6 /* VirtualTourist.xcdatamodeld */,
-				BE13452C1C936C7C005200A6 /* CoreDataStackManager.swift */,
 				BE1345241C935586005200A6 /* TravelLocationMapViewController.swift */,
 				BE1345261C93560F005200A6 /* PhotoAlbumViewController.swift */,
 				BED607891C97E5500061980C /* PhotoAlbumCollectionViewCell.swift */,
 				BE7B1F6B1C98974F00A8D809 /* FlickrClient.swift */,
-				BE1344F71C935143005200A6 /* Main.storyboard */,
-				BE1345281C9356BA005200A6 /* Pin.swift */,
-				BE13452A1C9356C8005200A6 /* Photo.swift */,
-				BE5EB37B1C9FAF2100D8A394 /* MapRegion.swift */,
-				BE1344FD1C935143005200A6 /* Assets.xcassets */,
 				BE1344FF1C935143005200A6 /* LaunchScreen.storyboard */,
+				BE1344F71C935143005200A6 /* Main.storyboard */,
+				BE1344FD1C935143005200A6 /* Assets.xcassets */,
 				BE1344F31C935143005200A6 /* AppDelegate.swift */,
 				BE1345021C935143005200A6 /* Info.plist */,
-				BE7B1FA31C9A4A2200A8D809 /* ImageCache.swift */,
+				BE1344FA1C935143005200A6 /* VirtualTourist.xcdatamodeld */,
+				BE90CDE71CA26EBC00D26582 /* CoreDataModel */,
 			);
 			path = VirtualTourist;
 			sourceTree = "<group>";
@@ -154,6 +150,18 @@
 				BE1345181C935144005200A6 /* Info.plist */,
 			);
 			path = VirtualTouristUITests;
+			sourceTree = "<group>";
+		};
+		BE90CDE71CA26EBC00D26582 /* CoreDataModel */ = {
+			isa = PBXGroup;
+			children = (
+				BE1345281C9356BA005200A6 /* Pin.swift */,
+				BE13452A1C9356C8005200A6 /* Photo.swift */,
+				BE5EB37B1C9FAF2100D8A394 /* MapRegion.swift */,
+				BE7B1FA31C9A4A2200A8D809 /* ImageCache.swift */,
+				BE13452C1C936C7C005200A6 /* CoreDataStackManager.swift */,
+			);
+			name = CoreDataModel;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
