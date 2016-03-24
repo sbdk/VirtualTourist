@@ -12,6 +12,7 @@ import CoreData
 class Photo: NSManagedObject {
     
     @NSManaged var imageUrlString: String?
+    @NSManaged var id: String?
     @NSManaged var dropPin: Pin?
     
     override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
@@ -22,14 +23,15 @@ class Photo: NSManagedObject {
         let entity =  NSEntityDescription.entityForName("Photo", inManagedObjectContext: context)!
         super.init(entity: entity, insertIntoManagedObjectContext: context)
         imageUrlString = dictionary["url_s"] as? String
+        id = dictionary["id"] as? String
     }
     
     var imageData: NSData? {
         get {
-            return FlickrClient.Caches.imageCache.imageDataWithIdentifier(imageUrlString)
+            return FlickrClient.Caches.imageCache.imageDataWithIdentifier(id)
         }
         set {
-            FlickrClient.Caches.imageCache.storeImageData(newValue, withIdentifier: imageUrlString!)
+            FlickrClient.Caches.imageCache.storeImageData(newValue, withIdentifier: id!)
         }
     }
 }

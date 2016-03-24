@@ -15,6 +15,7 @@ class ImageCache {
     
     // MARK: - Saving images
     func storeImageData(imageData: NSData?, withIdentifier identifier: String) {
+        
         let path = pathForIdentifier(identifier)
         // If the image is nil, remove images from the cache
         if imageData == nil {
@@ -48,6 +49,7 @@ class ImageCache {
         
         // Next Try the hard drive
         if let data = NSData(contentsOfFile: path) {
+            print("fetch data from document directory success")
             return data
         }
         return nil
