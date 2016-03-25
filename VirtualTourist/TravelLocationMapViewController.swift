@@ -20,7 +20,8 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
 
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
-        setMapViewRegion()
+        
+        self.setMapViewRegion()
         preloadedImageCount = 0
         photoNeedTobeLoaded = 0
     }
@@ -30,15 +31,17 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         deletePinAlertLabel.hidden = true
         deletePinAlertLabel.layer.masksToBounds = true
         deletePinAlertLabel.layer.cornerRadius = 5
-        
         navigationItem.rightBarButtonItem = self.editButtonItem()
         mapView.delegate = self
-        mapView.addAnnotations(fetchAllPins())
+        self.mapView.addAnnotations(self.fetchAllPins())
         
         //add longPressRecogniser into mapView
         let longPressRecogniser = UILongPressGestureRecognizer(target: self, action: "dropNewPin:")
         longPressRecogniser.minimumPressDuration = 1.0
         mapView.addGestureRecognizer(longPressRecogniser)
+        
+        //reduce application's resource requirements to improve background thread performance
+        backgroundContext.undoManager = nil
     }
     
     override func didReceiveMemoryWarning() {
@@ -90,19 +93,24 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         
         if editing{ //in editing state, pin will be removed once tapped by user
             let pin = view.annotation as! Pin
-            for photo in pin.photos {
-                //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
-                photo.imageData = nil
-                sharedContext.deleteObject(photo)
+            let pinObjectID = pin.objectID
+            backgroundContext.performBlockAndWait{
+                let pinToRemove = self.backgroundContext.objectWithID(pinObjectID) as! Pin
+                for photo in pinToRemove.photos {
+                    //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
+                    photo.imageData = nil
+                    self.backgroundContext.deleteObject(photo)
+                }
+                CoreDataStackManager.sharedInstance().saveContext()
             }
-            sharedContext.deleteObject(pin)
-            mapView.removeAnnotation(view.annotation!)
+            self.sharedContext.deleteObject(pin)
             CoreDataStackManager.sharedInstance().saveContext()
+            mapView.removeAnnotation(view.annotation!)
+            
             
         } else { // in normal state, perform follow functions
             let controller = self.storyboard?.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
             let pin = view.annotation as! Pin
-            controller.pin = pin
             controller.preloadedImageCount = self.preloadedImageCount
             if preloadedImageCount == photoNeedTobeLoaded {
                 controller.pin = pin
@@ -112,10 +120,14 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         }
     }
     
-    // *** CoreData help function ***
-    lazy var sharedContext: NSManagedObjectContext = {
-        return CoreDataStackManager.sharedInstance().managedObjectContext
-    }()
+    //*** CoreData help function ***
+    var sharedContext: NSManagedObjectContext {
+        return CoreDataStackManager.sharedInstance().managedObjectMainContext
+    }
+    
+    var backgroundContext: NSManagedObjectContext {
+        return CoreDataStackManager.sharedInstance().managedObjectBackgroundContext
+    }
     
     func fetchAllPins() -> [Pin]{
         let fetchRequest = NSFetchRequest(entityName: "Pin")
@@ -143,51 +155,64 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         if gestureRecognizer.state != .Began {return}
         let point = gestureRecognizer.locationInView(self.mapView)
         let pointCoordinate = mapView.convertPoint(point, toCoordinateFromView: mapView)
+        var photo: Photo!
+        var pinObjectID: NSManagedObjectID!
         
         //add new Pin object into sharedContext
-        let newPin = Pin(newPinlatitude: pointCoordinate.latitude, newPinlongitude: pointCoordinate.longitude, context: sharedContext)
-        mapView.addAnnotation(newPin)
+        let newPin = Pin(newPinlatitude: pointCoordinate.latitude, newPinlongitude: pointCoordinate.longitude, context: self.sharedContext)
         CoreDataStackManager.sharedInstance().saveContext()
+        self.mapView.addAnnotation(newPin)
         
         //initiate preloadedImageCount to 0, prepare to take photo load count for dropped new pin.
-        preloadedImageCount = 0
+        self.preloadedImageCount = 0
+        self.photoNeedTobeLoaded = 0
         
         //start to download image once new Pin object was created
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)){
-            FlickrClient.sharedInstance().getPhotosFromFlickr(newPin.latitude, dropPinLongitude: newPin.longitude, pageToReturn: 1, completionHandler: {(success, parsedResult, errorString) in
-                if let error = errorString {
-                    print(error)
-                } else {
-                    if let returnedTotalPages = parsedResult!["pages"] as? Int {
+        FlickrClient.sharedInstance().getPhotosFromFlickr(newPin.latitude, dropPinLongitude: newPin.longitude, pageToReturn: 1, completionHandler: {(success, parsedResult, errorString) in
+            if let error = errorString {
+                print(error)
+            } else {
+                if let returnedTotalPages = parsedResult!["pages"] as? Int {
+                    self.sharedContext.performBlockAndWait{
                         newPin.totalPages = returnedTotalPages
                         print("total pages: \(newPin.totalPages)")
+                        pinObjectID = newPin.objectID
+                        CoreDataStackManager.sharedInstance().saveContext()
                     }
-                    if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
-                        _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
-                            let photo = Photo(dictionary: dictionary, context: self.sharedContext)
+                }
+                if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
+                    
+                    _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
+                        self.backgroundContext.performBlockAndWait{
+                            photo = Photo(dictionary: dictionary, context: self.backgroundContext)
                             print(photo.imageUrlString!)
-                            
-                            //assign relationship between Pin and Photo object
-                            photo.dropPin = newPin
+                            photo.dropPin = self.backgroundContext.objectWithID(pinObjectID) as? Pin
                             CoreDataStackManager.sharedInstance().saveContext()
-                            
+                    
                             FlickrClient.sharedInstance().taskForImage(photo.imageUrlString!, completionHandler: {(data, error) in
                                 if let error = error {
                                     print("Image download error: \(error.localizedDescription)")
                                 }
                                 if let data = data {
-                                    photo.imageData = data
-                                    print("preload one image")
-                                    self.preloadedImageCount++
+                                    self.backgroundContext.performBlockAndWait{
+                                        photo.imageData = data
+                                        print("preload one image")
+                                        self.preloadedImageCount++
+                                    }
                                 }
                             })
-                            return photo
                         }
+                        return photo
                     }
-                    self.photoNeedTobeLoaded = newPin.photos.count
                 }
-            })
-        }
+                dispatch_async(dispatch_get_main_queue()){
+                    self.sharedContext.refreshObject(newPin, mergeChanges: true)
+                    self.photoNeedTobeLoaded = newPin.photos.count
+                    print("now we have \(newPin.photos.count) photos to be loaded in the background")
+                    CoreDataStackManager.sharedInstance().saveContext()
+                }
+            }
+        })
     }
     
     func setMapViewRegion(){
@@ -207,7 +232,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
                 sharedContext.deleteObject(region)
             }
             CoreDataStackManager.sharedInstance().saveContext()
-        } else {}
+        } else {print("use default mapRegion")}
     }
 
     override func setEditing(editing: Bool, animated: Bool) {

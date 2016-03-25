@@ -128,7 +128,6 @@
 				BE1344FD1C935143005200A6 /* Assets.xcassets */,
 				BE1344F31C935143005200A6 /* AppDelegate.swift */,
 				BE1345021C935143005200A6 /* Info.plist */,
-				BE1344FA1C935143005200A6 /* VirtualTourist.xcdatamodeld */,
 				BE90CDE71CA26EBC00D26582 /* CoreDataModel */,
 			);
 			path = VirtualTourist;
@@ -160,6 +159,7 @@
 				BE5EB37B1C9FAF2100D8A394 /* MapRegion.swift */,
 				BE7B1FA31C9A4A2200A8D809 /* ImageCache.swift */,
 				BE13452C1C936C7C005200A6 /* CoreDataStackManager.swift */,
+				BE1344FA1C935143005200A6 /* VirtualTourist.xcdatamodeld */,
 			);
 			name = CoreDataModel;
 			sourceTree = "<group>";
