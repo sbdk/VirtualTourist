@@ -20,7 +20,6 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
 
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
-        
         self.setMapViewRegion()
         preloadedImageCount = 0
         photoNeedTobeLoaded = 0
@@ -36,12 +35,9 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         self.mapView.addAnnotations(self.fetchAllPins())
         
         //add longPressRecogniser into mapView
-        let longPressRecogniser = UILongPressGestureRecognizer(target: self, action: "dropNewPin:")
+        let longPressRecogniser = UILongPressGestureRecognizer(target: self, action: #selector(TravelLocationMapViewController.dropNewPin(_:)))
         longPressRecogniser.minimumPressDuration = 1.0
         mapView.addGestureRecognizer(longPressRecogniser)
-        
-        //reduce application's resource requirements to improve background thread performance
-        backgroundContext.undoManager = nil
     }
     
     override func didReceiveMemoryWarning() {
@@ -107,7 +103,6 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
             CoreDataStackManager.sharedInstance().saveContext()
             mapView.removeAnnotation(view.annotation!)
             
-            
         } else { // in normal state, perform follow functions
             let controller = self.storyboard?.instantiateViewControllerWithIdentifier("PhotoAlbumViewController") as! PhotoAlbumViewController
             let pin = view.annotation as! Pin
@@ -120,35 +115,6 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         }
     }
     
-    //*** CoreData help function ***
-    var sharedContext: NSManagedObjectContext {
-        return CoreDataStackManager.sharedInstance().managedObjectMainContext
-    }
-    
-    var backgroundContext: NSManagedObjectContext {
-        return CoreDataStackManager.sharedInstance().managedObjectBackgroundContext
-    }
-    
-    func fetchAllPins() -> [Pin]{
-        let fetchRequest = NSFetchRequest(entityName: "Pin")
-        do{
-            return try sharedContext.executeFetchRequest(fetchRequest) as! [Pin]
-        } catch let error as NSError {
-            print("Error in fetchAllActors(): \(error)")
-            return [Pin]()
-        }
-    }
-    
-    func fetchStoredMapRegion() -> [MapRegion] {
-        let fetchRequest = NSFetchRequest(entityName: "MapRegion")
-        do{
-            return try sharedContext.executeFetchRequest(fetchRequest) as! [MapRegion]
-        } catch let error as NSError {
-            print("Error in fetchAllActors(): \(error)")
-            return [MapRegion]()
-        }
-    }
-    
     // *** mapView help function ***
     func dropNewPin(gestureRecognizer: UIGestureRecognizer){
         //get new pin coordinate
@@ -157,6 +123,7 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         let pointCoordinate = mapView.convertPoint(point, toCoordinateFromView: mapView)
         var photo: Photo!
         var pinObjectID: NSManagedObjectID!
+        var photoIDArray = [String]()
         
         //add new Pin object into sharedContext
         let newPin = Pin(newPinlatitude: pointCoordinate.latitude, newPinlongitude: pointCoordinate.longitude, context: self.sharedContext)
@@ -186,33 +153,62 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
                         self.backgroundContext.performBlockAndWait{
                             photo = Photo(dictionary: dictionary, context: self.backgroundContext)
                             print(photo.imageUrlString!)
+                            
+                            //save photoID into an array for future use
+                            photoIDArray.append(photo.id!)
                             photo.dropPin = self.backgroundContext.objectWithID(pinObjectID) as? Pin
-                            CoreDataStackManager.sharedInstance().saveContext()
-                    
+                        
                             FlickrClient.sharedInstance().taskForImage(photo.imageUrlString!, completionHandler: {(data, error) in
                                 if let error = error {
                                     print("Image download error: \(error.localizedDescription)")
                                 }
-                                if let data = data {
-                                    self.backgroundContext.performBlockAndWait{
-                                        photo.imageData = data
-                                        print("preload one image")
-                                        self.preloadedImageCount++
-                                    }
+                                if let returnedData = data {
+                                    //it's complicate to get photo object here, so we directly use imageCache method to store data
+                                    FlickrClient.Caches.imageCache.storeImageData(returnedData, withIdentifier: photoIDArray[self.preloadedImageCount])
+                                    self.preloadedImageCount += 1
+                                    print("preload data once")
                                 }
                             })
                         }
                         return photo
                     }
+                    CoreDataStackManager.sharedInstance().saveContext()
                 }
                 dispatch_async(dispatch_get_main_queue()){
-                    self.sharedContext.refreshObject(newPin, mergeChanges: true)
                     self.photoNeedTobeLoaded = newPin.photos.count
                     print("now we have \(newPin.photos.count) photos to be loaded in the background")
-                    CoreDataStackManager.sharedInstance().saveContext()
                 }
             }
         })
+    }
+    
+    //*** CoreData help function ***
+    var sharedContext: NSManagedObjectContext = {
+        return CoreDataStackManager.sharedInstance().managedObjectMainContext
+    }()
+    
+    var backgroundContext: NSManagedObjectContext = {
+        return CoreDataStackManager.sharedInstance().managedObjectBackgroundContext
+    }()
+    
+    func fetchAllPins() -> [Pin]{
+        let fetchRequest = NSFetchRequest(entityName: "Pin")
+        do{
+            return try sharedContext.executeFetchRequest(fetchRequest) as! [Pin]
+        } catch let error as NSError {
+            print("Error in fetchAllActors(): \(error)")
+            return [Pin]()
+        }
+    }
+    
+    func fetchStoredMapRegion() -> [MapRegion] {
+        let fetchRequest = NSFetchRequest(entityName: "MapRegion")
+        do{
+            return try sharedContext.executeFetchRequest(fetchRequest) as! [MapRegion]
+        } catch let error as NSError {
+            print("Error in fetchAllActors(): \(error)")
+            return [MapRegion]()
+        }
     }
     
     func setMapViewRegion(){

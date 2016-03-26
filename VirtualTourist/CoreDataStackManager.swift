@@ -65,36 +65,40 @@ class CoreDataStackManager {
     lazy var managedObjectMainContext: NSManagedObjectContext = {
 
         var managedObjectContext = NSManagedObjectContext(concurrencyType: .MainQueueConcurrencyType)
-//        managedObjectContext.persistentStoreCoordinator = self.persistentStoreCoordinator
+        managedObjectContext.persistentStoreCoordinator = self.persistentStoreCoordinator
         return managedObjectContext
     }()
     
     lazy var managedObjectBackgroundContext: NSManagedObjectContext = {
   
         var managedObjectContext = NSManagedObjectContext(concurrencyType: .PrivateQueueConcurrencyType)
-        managedObjectContext.persistentStoreCoordinator = self.persistentStoreCoordinator
         return managedObjectContext
     }()
     
     // MARK: - Core Data Saving support
     
     func saveContext () {
-        managedObjectMainContext.performBlockAndWait{
-            do {
-                try self.managedObjectMainContext.save()
-            } catch {
-                let nserror = error as NSError
-                NSLog("Unresolved error \(nserror), \(nserror.userInfo)")
-                abort()
+        managedObjectBackgroundContext.performBlockAndWait{
+            if self.managedObjectBackgroundContext.hasChanges{
+                do {
+                    try self.managedObjectBackgroundContext.save()
+                } catch {
+                    let nserror = error as NSError
+                    NSLog("Unresolved error \(nserror), \(nserror.userInfo)")
+                    abort()
+                }
             }
         }
-        managedObjectBackgroundContext.performBlockAndWait{
-            do {
-                try self.managedObjectBackgroundContext.save()
-            } catch {
-                let nserror = error as NSError
-                NSLog("Unresolved error \(nserror), \(nserror.userInfo)")
-                abort()
+        
+        managedObjectMainContext.performBlockAndWait{
+            if self.managedObjectMainContext.hasChanges{
+                do {
+                    try self.managedObjectMainContext.save()
+                } catch {
+                    let nserror = error as NSError
+                    NSLog("Unresolved error \(nserror), \(nserror.userInfo)")
+                    abort()
+                }
             }
         }
     }

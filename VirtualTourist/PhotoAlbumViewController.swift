@@ -30,18 +30,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
 
     override func viewDidLoad() {
         super.viewDidLoad()
-    
         //set mapView
         centerMapOnLocation(CLLocation(latitude: pin.latitude, longitude: pin.longitude))
         mapView.addAnnotation(pin)
-        
-        //get associated photos objects from CoreData
-        backgroundContext.performBlockAndWait{
-            do {
-                try self.fetchedResultsController.performFetch()
-            } catch {}
-            self.fetchedResultsController.delegate = self
-        }
+
         //set collectionView
         collectionView.allowsMultipleSelection = true
         photosToBeLoaded = pin.photos.count
@@ -53,6 +45,15 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         super.viewWillAppear(animated)
         //get photo urls from Flickr if the Pin has no linked photo object yet
         //works best when user drop pin on the map without network connection and later open the photoAlubm view with network connection.
+//        sharedContext.refreshObject(pin, mergeChanges: true)
+        backgroundContext.performBlockAndWait{
+            self.backgroundContext.reset()
+            do {
+                try self.fetchedResultsController.performFetch()
+            } catch {}
+            self.fetchedResultsController.delegate = self
+        }
+        
         if pin.photos.isEmpty {
             
             //set noImageLabel to show when pin has no photos reference
@@ -121,16 +122,17 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
         var photo: Photo!
         let collectionCell = collectionView.dequeueReusableCellWithReuseIdentifier("PhotoAlbumCollectionViewCell", forIndexPath: indexPath) as! PhotoAlbumCollectionViewCell
-        fetchedResultsController.managedObjectContext.performBlockAndWait{
-            photo = self.fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
-        }
         if collectionCell.selected{
             collectionCell.photoImageView.alpha = 0.5
         } else {
             collectionCell.photoImageView.alpha = 1
         }
         collectionCell.photoImageView.contentMode = .ScaleAspectFill
-        configureCell(collectionCell, photo: photo)
+        
+        backgroundContext.performBlockAndWait{
+            photo = self.fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
+            self.configureCell(collectionCell, photo: photo)
+        }
         return collectionCell
     }
     
@@ -199,17 +201,17 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     //set convenience var for CoreData Shared context
-    var sharedContext: NSManagedObjectContext {
+    var sharedContext: NSManagedObjectContext = {
         return CoreDataStackManager.sharedInstance().managedObjectMainContext
-    }
+    }()
     
-    var backgroundContext: NSManagedObjectContext {
+    var backgroundContext: NSManagedObjectContext = {
         return CoreDataStackManager.sharedInstance().managedObjectBackgroundContext
-    }
+    }()
     
     //set lazy var for fetchedResultsController
     lazy var fetchedResultsController: NSFetchedResultsController = {
-        var pinObjectID: NSManagedObjectID!
+
         let fetchRequest = NSFetchRequest(entityName: "Photo")
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "imageUrlString", ascending: true)]
         fetchRequest.predicate = NSPredicate(format: "dropPin == %@", self.pin)
@@ -217,14 +219,27 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         return fetchedResultController
     }()
     
+//    func fetchPin() -> [Pin]{
+//        let fetchRequest = NSFetchRequest(entityName: "Pin")
+//        fetchRequest.predicate = NSPredicate(format: "latitude == %@", self.pin.latitude)
+//        fetchRequest.predicate = NSPredicate(format: "longitude == %@", self.pin.longitude)
+//        do{
+//            return try sharedContext.executeFetchRequest(fetchRequest) as! [Pin]
+//        } catch let error as NSError {
+//            print("Error in fetchAllActors(): \(error)")
+//            return [Pin]()
+//        }
+//    }
+    
     //collectionView help function
     func configureCell(cell: PhotoAlbumCollectionViewCell, photo: Photo) {
         
         var photoImageData: NSData? = nil
         var photoImageUrl: String? = nil
+        
         backgroundContext.performBlockAndWait{
-            photoImageData = photo.imageData
             photoImageUrl = photo.imageUrlString
+            photoImageData = photo.imageData
         }
         var cellImage = UIImage(named: "placeHolder")
         cell.photoImageView.image = nil
@@ -233,6 +248,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             cellImage = UIImage(named: "placeHolder")
         } else if photoImageData != nil {
             cellImage = UIImage(data: photoImageData!)
+            print("use stored imageData once")
         }
         //if photo object has Url info but don' have stored image info:
         else {
@@ -244,12 +260,13 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                 if let returnedData = data {
                     self.backgroundContext.performBlockAndWait{
                         photo.imageData = returnedData
+                        print("photoID: \(photo.id)")
                     }
                     // update the cell later, on the main thread
                     dispatch_async(dispatch_get_main_queue()) {
                         cell.photoImageView.image = UIImage(data: returnedData)
-                        self.photosToBeLoaded--
-                        print("loaded 1 photo, \(self.photosToBeLoaded) photos left to be loaded")
+                        self.photosToBeLoaded -= 1
+                        print("downloaded 1 photo, \(self.photosToBeLoaded) photos left to be loaded from Flickr")
                         //if all photos have been loaded into cell, we set newCollectonButton status to enable
                         if self.photosToBeLoaded == 0 {
                             self.newCollectionButton.enabled = true
@@ -289,7 +306,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             let totalPages = Int(pin.totalPages)
             var photo: Photo!
             
-            //then we remove current album from CoreData
             backgroundContext.performBlockAndWait{
                 let pinToRemove = self.backgroundContext.objectWithID(pinObjectID) as! Pin
                 for photo in pinToRemove.photos {
@@ -298,6 +314,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                     self.backgroundContext.deleteObject(photo)
                 }
                 CoreDataStackManager.sharedInstance().saveContext()
+//                self.backgroundContext.reset()
             }
             
             print("Total pages available in PhotoAlbumView: \(pin.totalPages)")
@@ -309,28 +326,52 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                 self.randomPage = Int(arc4random_uniform(UInt32(totalPages))) + 1
             } else {}
             print("update with randomPage: \(self.randomPage)")
-                
+            
             FlickrClient.sharedInstance().getPhotosFromFlickr(self.pin.latitude, dropPinLongitude: self.pin.longitude, pageToReturn: self.randomPage, completionHandler: {(success, parsedResult, errorString) in
-                if let error = errorString {
-                    print(error)
-                } else {
-                    //load new data into CoreData
-                    if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
-                        _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
-                            self.backgroundContext.performBlockAndWait{
-                            photo = Photo(dictionary: dictionary, context: self.backgroundContext)
-                            photo.dropPin = self.backgroundContext.objectWithID(self.pinObjectID) as? Pin
-                                CoreDataStackManager.sharedInstance().saveContext()
+                    if let error = errorString {
+                        print(error)
+                    } else {
+                        if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
+                            
+                            _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
+                                self.backgroundContext.performBlockAndWait{
+                                    photo = Photo(dictionary: dictionary, context: self.backgroundContext)
+                                    print(photo.imageUrlString!)
+                                    photo.dropPin = self.backgroundContext.objectWithID(pinObjectID) as? Pin
+                                }
+                                return photo
                             }
-                            return photo
+                            CoreDataStackManager.sharedInstance().saveContext()
+                        }
+                        dispatch_async(dispatch_get_main_queue()){
+                            self.photosToBeLoaded = self.pin.photos.count
+                            print("there are \(self.photosToBeLoaded) photos need to be loaded")
                         }
                     }
-                    dispatch_async(dispatch_get_main_queue()){
-                        self.photosToBeLoaded = self.pin.photos.count
-                        print("there are \(self.photosToBeLoaded) photos need to be loaded")
-                    }
-                }
-            })
+                })    
+            
+            
+//            FlickrClient.sharedInstance().getPhotosFromFlickr(self.pin.latitude, dropPinLongitude: self.pin.longitude, pageToReturn: self.randomPage, completionHandler: {(success, parsedResult, errorString) in
+//                if let error = errorString {
+//                    print(error)
+//                } else {
+//                    //load new data into CoreData
+//                    if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
+//                        _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
+//                            self.backgroundContext.performBlockAndWait{
+//                            photo = Photo(dictionary: dictionary, context: self.backgroundContext)
+//                            photo.dropPin = self.backgroundContext.objectWithID(pinObjectID) as? Pin
+//                                CoreDataStackManager.sharedInstance().saveContext()
+//                            }
+//                            return photo
+//                        }
+//                    }
+//                    dispatch_async(dispatch_get_main_queue()){
+//                        self.photosToBeLoaded = self.pin.photos.count
+//                        print("there are \(self.photosToBeLoaded) photos need to be loaded")
+//                    }
+//                }
+//            })
         }
         updateButtonTitile()
     }
