@@ -22,7 +22,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     var randomPage: Int = 0
     var photosToBeLoaded: Int = 0
     var preloadedImageCount: Int = 0
-    var pinObjectID: NSManagedObjectID!
+//    var pinObjectID: NSManagedObjectID!
     var selectedIndexes = [NSIndexPath]()
     var insertedIndexPaths: [NSIndexPath]!
     var deletedIndexPaths: [NSIndexPath]!
@@ -45,17 +45,12 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         super.viewWillAppear(animated)
         //get photo urls from Flickr if the Pin has no linked photo object yet
         //works best when user drop pin on the map without network connection and later open the photoAlubm view with network connection.
-//        sharedContext.refreshObject(pin, mergeChanges: true)
-        backgroundContext.performBlockAndWait{
-            self.backgroundContext.reset()
-            do {
-                try self.fetchedResultsController.performFetch()
-            } catch {}
-            self.fetchedResultsController.delegate = self
-        }
-        
+        do {
+            try self.fetchedResultsController.performFetch()
+        } catch {}
+        self.fetchedResultsController.delegate = self
+
         if pin.photos.isEmpty {
-            
             //set noImageLabel to show when pin has no photos reference
             noImageLabel.hidden = false
             noImageLabel.layer.zPosition = 2
@@ -70,53 +65,41 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                     if let returnedTotalPages = parsedResult!["pages"] as? Int {
                         self.sharedContext.performBlockAndWait{
                             self.pin.totalPages = returnedTotalPages
-                            self.pinObjectID = self.pin.objectID
+//                            self.pinObjectID = self.pin.objectID
                             CoreDataStackManager.sharedInstance().saveContext()
                         }
                     }
                     if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
                         _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
-                            self.backgroundContext.performBlockAndWait{
-                                let photo = Photo(dictionary: dictionary, context: self.backgroundContext)
-                                photo.dropPin = self.backgroundContext.objectWithID(self.pinObjectID) as? Pin
-                                CoreDataStackManager.sharedInstance().saveContext()
+                            self.sharedContext.performBlockAndWait{
+                                photo = Photo(dictionary: dictionary, context: self.sharedContext)
+                                photo.dropPin = self.pin
                             }
                             return photo
                         }
+                        CoreDataStackManager.sharedInstance().saveContext()
+                        
                         dispatch_async(dispatch_get_main_queue()){
-                            self.sharedContext.refreshObject(self.pin, mergeChanges: true)
                             self.photosToBeLoaded = self.pin.photos.count
                             if self.photosToBeLoaded > 0 {
                                 self.noImageLabel.hidden = true
                             }
                             print("there are \(self.photosToBeLoaded) photos need to be loaded")
                             CoreDataStackManager.sharedInstance().saveContext()
-                            
                         }
-//                        dispatch_async(dispatch_get_main_queue()) {
-//                            
-//                        }
                     }
                 }
             })
         }
     }
-
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
     }
     
     //comfigure collection View
     func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        
-        var itemCount: Int!
-        backgroundContext.performBlockAndWait{
-            let sessionInfo = self.fetchedResultsController.sections![section]
-            itemCount = sessionInfo.numberOfObjects
-        }
-        print("collection view will have \(itemCount) items to be loaded")
-        return itemCount
+        let sessionInfo = self.fetchedResultsController.sections![section]
+        return sessionInfo.numberOfObjects
     }
     
     func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
@@ -128,11 +111,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             collectionCell.photoImageView.alpha = 1
         }
         collectionCell.photoImageView.contentMode = .ScaleAspectFill
-        
-        backgroundContext.performBlockAndWait{
-            photo = self.fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
-            self.configureCell(collectionCell, photo: photo)
-        }
+        photo = self.fetchedResultsController.objectAtIndexPath(indexPath) as! Photo
+        self.configureCell(collectionCell, photo: photo)
         return collectionCell
     }
     
@@ -141,7 +121,6 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         var dimension: CGFloat
         flowLayout.minimumInteritemSpacing = space
         flowLayout.minimumLineSpacing = space
-        
         dimension = (view.frame.size.width - (2 * space)) / 3.0
         flowLayout.itemSize = CGSizeMake(dimension, dimension)
         return flowLayout.itemSize
@@ -205,60 +184,35 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         return CoreDataStackManager.sharedInstance().managedObjectMainContext
     }()
     
-    var backgroundContext: NSManagedObjectContext = {
-        return CoreDataStackManager.sharedInstance().managedObjectBackgroundContext
-    }()
-    
     //set lazy var for fetchedResultsController
     lazy var fetchedResultsController: NSFetchedResultsController = {
-
         let fetchRequest = NSFetchRequest(entityName: "Photo")
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "imageUrlString", ascending: true)]
         fetchRequest.predicate = NSPredicate(format: "dropPin == %@", self.pin)
-        let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.backgroundContext, sectionNameKeyPath: nil, cacheName: nil)
+        let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
         return fetchedResultController
     }()
     
-//    func fetchPin() -> [Pin]{
-//        let fetchRequest = NSFetchRequest(entityName: "Pin")
-//        fetchRequest.predicate = NSPredicate(format: "latitude == %@", self.pin.latitude)
-//        fetchRequest.predicate = NSPredicate(format: "longitude == %@", self.pin.longitude)
-//        do{
-//            return try sharedContext.executeFetchRequest(fetchRequest) as! [Pin]
-//        } catch let error as NSError {
-//            print("Error in fetchAllActors(): \(error)")
-//            return [Pin]()
-//        }
-//    }
-    
     //collectionView help function
     func configureCell(cell: PhotoAlbumCollectionViewCell, photo: Photo) {
-        
-        var photoImageData: NSData? = nil
-        var photoImageUrl: String? = nil
-        
-        backgroundContext.performBlockAndWait{
-            photoImageUrl = photo.imageUrlString
-            photoImageData = photo.imageData
-        }
+
         var cellImage = UIImage(named: "placeHolder")
         cell.photoImageView.image = nil
-        
-        if photoImageUrl == nil || photoImageUrl == "" {
+        if photo.imageUrlString == nil || photo.imageUrlString == "" {
             cellImage = UIImage(named: "placeHolder")
-        } else if photoImageData != nil {
-            cellImage = UIImage(data: photoImageData!)
+        } else if photo.imageData != nil {
+            cellImage = UIImage(data: photo.imageData!)
             print("use stored imageData once")
         }
         //if photo object has Url info but don' have stored image info:
         else {
             self.newCollectionButton.enabled = false
-            let task = FlickrClient.sharedInstance().taskForImage(photoImageUrl!) { data, error in
+            let task = FlickrClient.sharedInstance().taskForImage(photo.imageUrlString!) { data, error in
                 if let error = error {
                     print("Image download error: \(error.localizedDescription)")
                 }
                 if let returnedData = data {
-                    self.backgroundContext.performBlockAndWait{
+                    self.sharedContext.performBlockAndWait{
                         photo.imageData = returnedData
                         print("photoID: \(photo.id)")
                     }
@@ -285,16 +239,14 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         if collectionView.indexPathsForSelectedItems()!.count > 0 {
             print("start to delete selected photos")
             var photoToDelete = [Photo]()
-            backgroundContext.performBlockAndWait{
                 for indexPath in self.collectionView.indexPathsForSelectedItems()!{
                     photoToDelete.append(self.fetchedResultsController.objectAtIndexPath(indexPath) as! Photo)
                 }
                 for photo in photoToDelete{
                     photo.imageData = nil
-                    self.backgroundContext.deleteObject(photo)
+                    self.sharedContext.deleteObject(photo)
                 }
-                CoreDataStackManager.sharedInstance().saveContext()
-            }
+            CoreDataStackManager.sharedInstance().saveContext()
         }
         // if no photo has been selected, perform update functioin
         else {
@@ -302,20 +254,14 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             newCollectionButton.enabled = false
             photosToBeLoaded = 0
             preloadedImageCount = 0
-            let pinObjectID = pin.objectID
             let totalPages = Int(pin.totalPages)
             var photo: Photo!
-            
-            backgroundContext.performBlockAndWait{
-                let pinToRemove = self.backgroundContext.objectWithID(pinObjectID) as! Pin
-                for photo in pinToRemove.photos {
-                    //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
-                    photo.imageData = nil
-                    self.backgroundContext.deleteObject(photo)
-                }
-                CoreDataStackManager.sharedInstance().saveContext()
-//                self.backgroundContext.reset()
+            for photo in pin.photos {
+                //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
+                photo.imageData = nil
+                self.sharedContext.deleteObject(photo)
             }
+            CoreDataStackManager.sharedInstance().saveContext()
             
             print("Total pages available in PhotoAlbumView: \(pin.totalPages)")
             //here we define a randomPage variable to be within 1-50, since Flickr has total image return limit and performance issue
@@ -332,46 +278,22 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                         print(error)
                     } else {
                         if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
-                            
                             _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
-                                self.backgroundContext.performBlockAndWait{
-                                    photo = Photo(dictionary: dictionary, context: self.backgroundContext)
-                                    print(photo.imageUrlString!)
-                                    photo.dropPin = self.backgroundContext.objectWithID(pinObjectID) as? Pin
-                                }
-                                return photo
+                            self.sharedContext.performBlockAndWait{
+                                photo = Photo(dictionary: dictionary, context: self.sharedContext)
+                                print(photo.imageUrlString!)
+                                photo.dropPin = self.pin
                             }
-                            CoreDataStackManager.sharedInstance().saveContext()
+                            return photo
                         }
-                        dispatch_async(dispatch_get_main_queue()){
-                            self.photosToBeLoaded = self.pin.photos.count
-                            print("there are \(self.photosToBeLoaded) photos need to be loaded")
-                        }
+                        CoreDataStackManager.sharedInstance().saveContext()
                     }
-                })    
-            
-            
-//            FlickrClient.sharedInstance().getPhotosFromFlickr(self.pin.latitude, dropPinLongitude: self.pin.longitude, pageToReturn: self.randomPage, completionHandler: {(success, parsedResult, errorString) in
-//                if let error = errorString {
-//                    print(error)
-//                } else {
-//                    //load new data into CoreData
-//                    if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
-//                        _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
-//                            self.backgroundContext.performBlockAndWait{
-//                            photo = Photo(dictionary: dictionary, context: self.backgroundContext)
-//                            photo.dropPin = self.backgroundContext.objectWithID(pinObjectID) as? Pin
-//                                CoreDataStackManager.sharedInstance().saveContext()
-//                            }
-//                            return photo
-//                        }
-//                    }
-//                    dispatch_async(dispatch_get_main_queue()){
-//                        self.photosToBeLoaded = self.pin.photos.count
-//                        print("there are \(self.photosToBeLoaded) photos need to be loaded")
-//                    }
-//                }
-//            })
+                    dispatch_async(dispatch_get_main_queue()){
+                        self.photosToBeLoaded = self.pin.photos.count
+                        print("there are \(self.photosToBeLoaded) photos need to be loaded")
+                    }
+                }
+            })
         }
         updateButtonTitile()
     }

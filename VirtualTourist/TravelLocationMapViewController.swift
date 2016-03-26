@@ -89,15 +89,11 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         
         if editing{ //in editing state, pin will be removed once tapped by user
             let pin = view.annotation as! Pin
-            let pinObjectID = pin.objectID
-            backgroundContext.performBlockAndWait{
-                let pinToRemove = self.backgroundContext.objectWithID(pinObjectID) as! Pin
-                for photo in pinToRemove.photos {
-                    //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
-                    photo.imageData = nil
-                    self.backgroundContext.deleteObject(photo)
-                }
-                CoreDataStackManager.sharedInstance().saveContext()
+            for photo in pin.photos {
+                //imageData is not stored in CoreData, so need to be removed manually from Memory and Disk
+                photo.imageData = nil
+                self.sharedContext.deleteObject(photo)
+            CoreDataStackManager.sharedInstance().saveContext()
             }
             self.sharedContext.deleteObject(pin)
             CoreDataStackManager.sharedInstance().saveContext()
@@ -122,8 +118,6 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
         let point = gestureRecognizer.locationInView(self.mapView)
         let pointCoordinate = mapView.convertPoint(point, toCoordinateFromView: mapView)
         var photo: Photo!
-        var pinObjectID: NSManagedObjectID!
-        var photoIDArray = [String]()
         
         //add new Pin object into sharedContext
         let newPin = Pin(newPinlatitude: pointCoordinate.latitude, newPinlongitude: pointCoordinate.longitude, context: self.sharedContext)
@@ -143,20 +137,19 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
                     self.sharedContext.performBlockAndWait{
                         newPin.totalPages = returnedTotalPages
                         print("total pages: \(newPin.totalPages)")
-                        pinObjectID = newPin.objectID
                         CoreDataStackManager.sharedInstance().saveContext()
                     }
                 }
                 if let photosDictionaries = parsedResult!["photo"] as? [[String:AnyObject]]{
                     
+                    var photoIDArray = [String]()
                     _ = photosDictionaries.map(){(dictionary: [String: AnyObject]) -> Photo in
-                        self.backgroundContext.performBlockAndWait{
-                            photo = Photo(dictionary: dictionary, context: self.backgroundContext)
+                        self.sharedContext.performBlockAndWait{
+                            photo = Photo(dictionary: dictionary, context: self.sharedContext)
                             print(photo.imageUrlString!)
-                            
                             //save photoID into an array for future use
                             photoIDArray.append(photo.id!)
-                            photo.dropPin = self.backgroundContext.objectWithID(pinObjectID) as? Pin
+                            photo.dropPin = newPin
                         
                             FlickrClient.sharedInstance().taskForImage(photo.imageUrlString!, completionHandler: {(data, error) in
                                 if let error = error {
@@ -185,10 +178,6 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
     //*** CoreData help function ***
     var sharedContext: NSManagedObjectContext = {
         return CoreDataStackManager.sharedInstance().managedObjectMainContext
-    }()
-    
-    var backgroundContext: NSManagedObjectContext = {
-        return CoreDataStackManager.sharedInstance().managedObjectBackgroundContext
     }()
     
     func fetchAllPins() -> [Pin]{
@@ -227,7 +216,10 @@ class TravelLocationMapViewController: UIViewController, MKMapViewDelegate {
             for region in fetchStoredMapRegion(){
                 sharedContext.deleteObject(region)
             }
+            //once clear the mapRegion CoreData, save the current mapRegion
+            _ = MapRegion(mapView: mapView, context: sharedContext) as MapRegion
             CoreDataStackManager.sharedInstance().saveContext()
+            
         } else {print("use default mapRegion")}
     }
 

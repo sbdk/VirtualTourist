@@ -69,27 +69,9 @@ class CoreDataStackManager {
         return managedObjectContext
     }()
     
-    lazy var managedObjectBackgroundContext: NSManagedObjectContext = {
-  
-        var managedObjectContext = NSManagedObjectContext(concurrencyType: .PrivateQueueConcurrencyType)
-        return managedObjectContext
-    }()
-    
     // MARK: - Core Data Saving support
     
     func saveContext () {
-        managedObjectBackgroundContext.performBlockAndWait{
-            if self.managedObjectBackgroundContext.hasChanges{
-                do {
-                    try self.managedObjectBackgroundContext.save()
-                } catch {
-                    let nserror = error as NSError
-                    NSLog("Unresolved error \(nserror), \(nserror.userInfo)")
-                    abort()
-                }
-            }
-        }
-        
         managedObjectMainContext.performBlockAndWait{
             if self.managedObjectMainContext.hasChanges{
                 do {
